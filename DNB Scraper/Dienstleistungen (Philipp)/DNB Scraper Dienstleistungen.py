@@ -229,3 +229,7 @@ while index < len(name_list):
 
 print("Wahrscheinlich richtige Größe oder nur eine Angabe: " + str(prob_SME) + ", eigentlich zu klein: " + str(
     micro) + ", eigentlich zu groß: " + str(big))
+
+#final save when scraping is done
+with open('output/company_attributes.json', 'w') as f1:
+    json.dump(list(companies), f1)

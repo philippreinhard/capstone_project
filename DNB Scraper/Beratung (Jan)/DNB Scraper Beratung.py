@@ -206,7 +206,7 @@ while index < len(name_list):
     index += 1
 
     # create save state every 10 iterations
-    if index % 2 == 0:
+    if index % 10 == 0:
         # calculate and print ETA time
         current = time.time()
         sys.stdout.write('\r' + 'ETA:' + str(

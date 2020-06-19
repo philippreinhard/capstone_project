@@ -169,11 +169,11 @@ while index < len(name_list):
     # create save state every 10 iterations
     if index % 10 == 0 and index != 0:
         # calculate and print ETA time
-        current = time.time()
+        '''current = time.time()
         sys.stdout.write('\r' + 'ETA:' + str(
             int(((current - start) / index * (len(name_list) - const_index) / 60) - (
                     current - start) / 60)) + ' Minuten' + '\n')
-        sys.stdout.flush()
+        sys.stdout.flush()'''
 
         # save current index
         with open('current_index.json', 'w') as f:
@@ -184,9 +184,7 @@ while index < len(name_list):
         with open('output/company_attributes.json', 'w') as f1:
             json.dump(list(companies), f1)
 
-        print("Nach " + str(index - 1) + " Unternehmen haben " + str(
-            SME) + " wahrscheinlich die richtige Größe oder nur eine Angabe. " + str(
-            micro) + " sind eigentlich zu klein. " + str(big) + " sind zu groß.")
+        print("Nach " + str(index - 1) + " Unternehmen: " + "SME: " + str(SME) + ", micro: " + str(micro) + ", groß: " + str(big) + ", unbekannt: " + str(unknown))
 
     name = name_list[index]
     if name is None or name == "Frau" or name == "Herr":
@@ -234,29 +232,25 @@ while index < len(name_list):
     # add company to list, no matter the size
     companies.append([name, new_name, n_employees, n_sales, plz, city])
 
-    # the company is big, if either value is not below the big threshold or both values aren't missing
-    if not (int(n_employees.replace(",", "")) < 250 or float(n_sales.replace(",", "")) < 40 or (n_employees == "missing"
-                                                                                                and n_sales == "missing")):
-        big += 1
-        print("Größe: big")
-
-    # check if company is actually even smaller than SME threshold
-    if int(n_employees.replace(",", "")) < 10 or float(n_sales.replace(",", "")) < 0.7:
-        micro += 1
-        print("Größe: micro")
-
-    # also check if company size is completely unknown
-    elif n_employees == "missing" and n_sales == "missing":
+    # company size is completely unknown
+    if n_employees == "missing" and n_sales == "missing":
         unknown += 1
         print("Größe: unknown")
+    # company size is big
+    elif (n_employees == "missing" and float(n_sales.replace(",", "")) >= 40) or (n_sales == "missing" and int(n_employees.replace(",", "")) >= 250) or (n_employees != "missing" and n_sales != "missing" and float(n_sales.replace(",", "")) >= 40 and int(n_employees.replace(",", "")) >= 250):
+        big += 1
+        print("Größe: big")
+    # company size is micro
+    elif (n_employees == "missing" and float(n_sales.replace(",", "")) < 0.7) or (n_sales == "missing" and int(n_employees.replace(",", "")) < 10) or (n_employees != "missing" and n_sales != "missing" and float(n_sales.replace(",", "")) < 0.7 and int(n_employees.replace(",", "")) < 10):
+        micro += 1
+        print("Größe: micro")
     else:
         SME += 1
         print("Größe: SME")
     # increase index
     index += 1
 
-print("Wahrscheinlich richtige Größe oder nur eine Angabe: " + str(SME) + ", eigentlich zu klein: " + str(
-    micro) + ", eigentlich zu groß: " + str(big))
+print("SME: " + str(SME) + ", micro: " + str(micro) + ", groß: " + str(big) + ", unbekannt: " + str(unknown))
 
 # final save when scraping is done
 with open('output/company_attributes.json', 'w') as f1:

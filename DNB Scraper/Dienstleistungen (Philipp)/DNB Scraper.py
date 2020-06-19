@@ -90,7 +90,6 @@ def scrape3(company_link):
     driver = getChromeDriver()
     driver.get(company_link)
 
-
     try:
         body = driver.find_element_by_class_name("company_info_body.module_body")
     except exceptions.NoSuchElementException as e:
@@ -194,6 +193,7 @@ while index < len(name_list):
         continue
     print(str(index) + "/" + str(len(name_list)))
     print(name)
+
     company_link = scrape2(name)
     print(company_link)
 
@@ -205,8 +205,9 @@ while index < len(name_list):
     if company_link == "no results":
         company_link = scrape2(name)
     if company_link == "not in db" or company_link == "no results":
-        index +=1
+        index += 1
         continue
+
     # Print company_link again just to see, whether 'no results' has changed into an actual link (happened already)
     print(company_link)
 
@@ -224,37 +225,37 @@ while index < len(name_list):
     if new_name == "missing":
         new_name = name
 
-
     print("Mitarbeiter: " + str(n_employees.replace(",", "")))
     print("Umsatz: " + str(n_sales))
     print("Ort:" + plz + " " + city)
 
+    # add company to list
     companies.append([new_name, n_employees, n_sales, plz, city])
 
-    # if one of the values is below the "big company" threshold, we count the company as an SME. We also consider
-    # the company if both values are unknown and if only one value is unknown and the company is too big according to
-    # the existing value, we do not consider it.
-    if not(int(n_employees.replace(",", "")) < 250 or float(n_sales.replace(",", "")) < 40 or (n_employees == "missing"
-                                                                                               and n_sales == "missing")):
+    # the company is big, if either value is not below the big threshold or both values aren't missing
+    if not (int(n_employees.replace(",", "")) < 250 or float(n_sales.replace(",", "")) < 40 or (n_employees == "missing"
+                                                                                                and n_sales == "missing")):
         big += 1
         print("Größe: big")
-    # check if company is actually even smaller than SME, but still considered
+
+    # check if company is actually even smaller than SME threshold
     if int(n_employees.replace(",", "")) < 10 or float(n_sales.replace(",", "")) < 0.7:
         micro += 1
         print("Größe: micro")
+
     # also check if company size is completely unknown
     elif n_employees == "missing" and n_sales == "missing":
         unknown += 1
         print("Größe: unknown")
     else:
+        SME += 1
         print("Größe: SME")
-    # increase index counter
+    # increase index
     index += 1
-
 
 print("Wahrscheinlich richtige Größe oder nur eine Angabe: " + str(SME) + ", eigentlich zu klein: " + str(
     micro) + ", eigentlich zu groß: " + str(big))
 
-#final save when scraping is done
+# final save when scraping is done
 with open('output/company_attributes.json', 'w') as f1:
     json.dump(list(companies), f1)

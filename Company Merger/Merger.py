@@ -1,5 +1,7 @@
 import json
 
+### This method takes two input lists as produced by the DNB scrapers and merges them
+### while overriding missing values
 with open('input/input1.json', 'r') as input1:
     list1 = json.load(input1)
 
@@ -41,6 +43,11 @@ for company1 in list1:
                 temp_list.append(company2[4])
             else:
                 temp_list.append(company1[4])
+
+            if company1[5] == 'missing' and company2[5] != 'missing':
+                temp_list.append(company2[5])
+            else:
+                temp_list.append(company1[5])
             print('TempCompany Output: ' +str(temp_list))
             output_list.append(temp_list)
             found = True
@@ -51,7 +58,7 @@ for company1 in list1:
         output_list.append(company1)
 
 
-
+## now add all elements that are only in list2 to the output list
 
 def contains(alist, elem):
     for l in alist:

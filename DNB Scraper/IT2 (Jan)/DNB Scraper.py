@@ -94,6 +94,7 @@ def scrape3(company_link):
         body = driver.find_element_by_class_name("company_info_body.module_body")
     except exceptions.NoSuchElementException as e:
         print(e)
+        return "missing"
 
     try:
         field_employees = body.find_element_by_class_name("empCon")

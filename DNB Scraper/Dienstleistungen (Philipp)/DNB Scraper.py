@@ -229,7 +229,7 @@ while index < len(name_list):
     print("Umsatz: " + str(n_sales))
     print("Ort:" + plz + " " + city)
 
-    # add company to list
+    # add company to list, no matter the size
     companies.append([new_name, n_employees, n_sales, plz, city])
 
     # the company is big, if either value is not below the big threshold or both values aren't missing

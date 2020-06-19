@@ -117,7 +117,8 @@ def scrape3(company_link):
         location = "missing"
 
     try:
-        name = driver.find_element_by_class_name("title").text
+        content_card = driver.find_element_by_class_name("content_card.clearfix")
+        name = content_card.find_element_by_class_name("title").text
     except exceptions.NoSuchElementException as e:
         name = "missing"
 
@@ -224,13 +225,14 @@ while index < len(name_list):
 
     if new_name == "missing":
         new_name = name
-
+    print("Alter Name: " + name)
+    print("Neuer Name: " + new_name)
     print("Mitarbeiter: " + str(n_employees.replace(",", "")))
     print("Umsatz: " + str(n_sales))
-    print("Ort:" + plz + " " + city)
+    print("Ort: " + plz + " " + city)
 
     # add company to list, no matter the size
-    companies.append([new_name, n_employees, n_sales, plz, city])
+    companies.append([name, new_name, n_employees, n_sales, plz, city])
 
     # the company is big, if either value is not below the big threshold or both values aren't missing
     if not (int(n_employees.replace(",", "")) < 250 or float(n_sales.replace(",", "")) < 40 or (n_employees == "missing"

@@ -146,7 +146,7 @@ try:
         big = save_list[2]
         micro = save_list[3]
         unknown = save_list[4]
-except:
+except Exception as e:
     index = 0
     const_index = index
     SME = 0
@@ -161,7 +161,7 @@ with open('company_names.json', 'r') as file1:
 try:
     with open('output/company_attributes.json', 'r') as file2:
         companies = json.load(file2)
-except:
+except Exception as e:
     companies = []
 
 # loop through company name list
@@ -177,13 +177,20 @@ while index < len(name_list):
         sys.stdout.flush()'''
 
         # save current index
-        with open('current_index.json', 'w') as f:
-            save_list = [index, SME, big, micro, unknown]
-            json.dump(save_list, f)
+        try:
+            with open('current_index.json', 'w') as f:
+                save_list = [index, SME, big, micro, unknown]
+                json.dump(save_list, f)
+        except Exception as e:
+            print("index saving failed")
 
         # save current company list
-        with open('output/company_attributes.json', 'w') as f1:
-            json.dump(list(companies), f1)
+        try:
+            with open('output/company_attributes.json', 'w') as f1:
+                json.dump(list(companies), f1)
+            print("current status saved")
+        except Exception as e:
+            print("saving failed")
 
         print("Nach " + str(index - 1) + " Unternehmen: " + "SME: " + str(SME) + ", micro: " + str(micro) + ", groß: " + str(big) + ", unbekannt: " + str(unknown))
 
@@ -218,7 +225,7 @@ while index < len(name_list):
     try:
         plz = words[0]
         city = words[1]
-    except:
+    except Exception as e:
         plz = "missing"
         city = "missing"
 
@@ -254,5 +261,9 @@ while index < len(name_list):
 print("SME: " + str(SME) + ", micro: " + str(micro) + ", groß: " + str(big) + ", unbekannt: " + str(unknown))
 
 # final save when scraping is done
-with open('output/company_attributes.json', 'w') as f1:
-    json.dump(list(companies), f1)
+try:
+    with open('output/company_attributes.json', 'w') as f1:
+        json.dump(list(companies), f1)
+    print("final status saved")
+except Exception as e:
+    print("saving failed")

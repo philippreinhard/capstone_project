@@ -32,6 +32,7 @@ with open("KUNUNU_GCE mbH.csv_19.11.2019.html") as fp:
     soup = BeautifulSoup(fp)
     print(soup.find_all("td"))
 
+
 with open("KUNUNU_GCE mbH.csv_23.10.2019.html") as fp:
     soup = BeautifulSoup(fp)
     print(soup.find_all("td"))
@@ -44,7 +45,6 @@ with open("KUNUNU_GCE mbH.csv_27.04.2020.html") as fp:
     soup = BeautifulSoup(fp)
     print(soup.find_all("td"))
     print(soup.find_all("p"))
-
 
 with open("KUNUNU_EACG GmbH.csv_21.02.2020.html") as fp:
     soup = BeautifulSoup(fp)

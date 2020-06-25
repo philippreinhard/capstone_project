@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import time
+import progressbar
 
 
 def scrape_insolvency_court():
@@ -230,13 +231,14 @@ def detail_search(name='', region='', court='', residence='', verbose=False):
     return insolvency
 
 
-def scrape_court_and_insolvency(company_attributes, insolvency_court, verbose=False):
+def scrape_court_and_insolvency(company_attributes, insolvency_court, time_out=0, verbose=False):
     """
     Search for insolvency for a company using the name and postcode + city of the headquarter and returns insolvencies
     in a dict. If there is any error during the process, the company name is saved in an error-list.
 
-    :param company_attributes (list): list of a list of information [name, employee, sales Mio. €, postcode, city]
+    :param company_attributes (list): list of a list of information [name (based on kununu), name (based on dnb), employee, sales Mio. €, postcode, city]
     :param insolvency_court (dict): dict of regions and courts from scrape_insolvency_court()
+    :param time_out (int): time delay between scraping
     :param verbose (bool): print additional information
     :return: insolvenz_data_dict (dict), errors (list)
     """
@@ -246,18 +248,39 @@ def scrape_court_and_insolvency(company_attributes, insolvency_court, verbose=Fa
 
     insolvenz_data_dict = {}
     errors = []
+    
+#     # status bar 
+#     bar = progressbar.ProgressBar(maxval=len(company_attributes), \
+#     widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+#     bar.start()
 
     for i in range(len(company_attributes)):
-        name = company_attributes[i][0]
-        plz = company_attributes[i][3]
-        city = company_attributes[i][4].title()
+        time.sleep(time_out)
+#         bar.update(i+1)
+        
+        insolvency_court_raw=""
+        
+        company_attribute_i = company_attributes[i]
+        
+        name = company_attribute_i[1]
+        plz = company_attribute_i[4]
+        city = company_attribute_i[5][1:].title()
         if verbose:
+            print()
+            print(str(i) + '. / ' + str(len(company_attributes)))
             print(name)
             print(plz)
             print(city)
 
         # filtering nonsense data
         if name.lower() == 'frau' or name.lower() == 'herr':
+            error_type = 0
+            error_company_attributes = company_attribute_i
+            error_company_attributes.append(error_type)
+            errors.append(error_company_attributes)
+            if verbose:
+                print('Error!')
+                print(name + ' ' + plz + ' ' + city)
             continue
 
         # change german char into compatible char<
@@ -265,10 +288,10 @@ def scrape_court_and_insolvency(company_attributes, insolvency_court, verbose=Fa
         new_char = ['ae', 'oe', 'ue']
 
         for i_char in range(len(german_char)):
-            name = name.replace(german_char[i_char], new_char[i_char])
-            city = city.replace(german_char[i_char], new_char[i_char])
+            name_ger = name.replace(german_char[i_char], new_char[i_char])
+            city_ger = city.replace(german_char[i_char], new_char[i_char])
 
-        payload = 'suchen=suchen&suchfeld=' + plz + city
+        payload = 'suchen=suchen&suchfeld=' + plz + ' ' + city_ger
 
         with requests.Session() as s:
             s.headers = {"User-Agent": "Mozilla/5.0"}
@@ -283,25 +306,77 @@ def scrape_court_and_insolvency(company_attributes, insolvency_court, verbose=Fa
 
         # workaround if court could not be found but city name is in insolvency_court
         except:
-            if city[1:] in insolvency_court:
-                insolvency_court_raw = city[1:]
-            else:
-                errors.append(name + ' ' + plz + ' ' + city)
-                if verbose:
-                    print('Error!')
-                    print(name + ' ' + plz + ' ' + city)
+            error_type = 1
+#             for region_court in insolvency_court:
+#                 for city_court in insolvency_court[region_court]:
+#                     if city in city_court:
+#                         insolvency_court_raw = city_court
 
-                continue
+            if insolvency_court_raw == "":
+
+                try: 
+                    URL = 'https://gerichtsstand.net/suche/?plz='+ plz + '&ort=' + city
+
+                    with requests.Session() as s:
+                        s.headers = {"User-Agent": "Mozilla/5.0"}
+                        s.headers.update({'Content-Type': 'application/x-www-form-urlencoded'})
+
+                        res = s.post(URL)
+                        soup = BeautifulSoup(res.text, "lxml")
+
+                    infos = soup.findAll('div')[12].find('div').find('div').find('i').nextSibling
+                    for i in range(10):
+                        infos = infos.nextSibling
+                        if "Insolvenzverfahren" in infos:
+                            scraped_court=infos.nextSibling.text[3:]
+                            if scraped_court in insolvency_court:
+                                insolvency_court_raw = scraped_court
+
+                except:
+                    error_type = 2
+                    #scraped_court = soup.findAll('div')[12].find('div').find('a').text[12:]
+                    infos = soup.findAll('div')[12].find('a').text
+                    insolvency_court_raw = infos[:infos.find('(')] + infos[infos.find(')') + 1:]
+                    
+                    for region_court in insolvency_court:
+                        for city_court in insolvency_court[region_court]:
+                            if city_court in insolvency_court_raw:
+                                insolvency_court_raw = city_court
+                
+                if insolvency_court_raw == "":
+                    infos = soup.findAll('div')[12].find('a').text
+                    insolvency_court_raw = infos[:infos.find('(')] + infos[infos.find(')') + 1:]
+                    
+                    for region_court in insolvency_court:
+                        for city_court in insolvency_court[region_court]:
+                            if city_court in insolvency_court_raw:
+                                insolvency_court_raw = city_court
+                                
+                if insolvency_court_raw == "":
+                    error_company_attributes = company_attribute_i
+                    error_company_attributes.append(error_type)
+                    errors.append(error_company_attributes)
+                    
+                    if verbose:
+                        print('Error!')
+                        print(error_company_attributes)
+                    
+                    
 
         # finally insolvency data
-        for region in insolvency_court:
-            for city in insolvency_court[region]:
-                if city in insolvency_court_raw:
-                    data = detail_search(name=name, region=region, court=city)
+        for region_court in insolvency_court:
+            for city_court in insolvency_court[region_court]:
+                if city_court in insolvency_court_raw:
+                    if verbose:
+                        print('Court: ' + city_court)
+
+                    data = detail_search(name=name, region=region_court, court=city_court)
                     if len(data) > 0:
                         insolvenz_data_dict[name] = data
                         if verbose:
                             print('Treffer: ' + name + ': ' + str(len(data)))
                             print(str(i) + '/' + str(len(company_attributes)))
-
+                            
+                            
+#     bar.finish()
     return insolvenz_data_dict, errors

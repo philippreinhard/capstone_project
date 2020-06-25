@@ -5,7 +5,7 @@ import os
 import json
 
 company_attributes = []
-with open('output.json', 'r') as file:
+with open('input1.json', 'r') as file:
     company_attributes = json.load(file)
 
 company_names = []

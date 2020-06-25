@@ -73,5 +73,5 @@ for company2 in list2:
         print(company2)
 
 
-with open('output/output.json', 'w') as f:
+with open('input/output.json', 'w') as f:
     json.dump(output_list, f)

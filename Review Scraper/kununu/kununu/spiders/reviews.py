@@ -7,7 +7,7 @@ import json
 # [kununu-Name, dnb-Name, employees, sales, plz, city]
 # 0: kununu-Name, 1: dnb-Name, 2: employees, 3: sales, 4: plz, 5: city
 company_attributes = []
-with open('company_attributes_IT_merged.json', 'r') as file:
+with open('new_company_attributes_Dienstleistungen_merged.json', 'r') as file:
     company_attributes = json.load(file)
 
 company_names = []
@@ -33,7 +33,7 @@ class Reviews(scrapy.Spider):
     def start_requests(self):
 
         url_list = []
-        with open('urls_merged_IT.json', 'r') as file:
+        with open('urls_merged_Dienst.json', 'r') as file:
             url_list = json.load(file)
 
         for url in url_list:
@@ -48,6 +48,8 @@ class Reviews(scrapy.Spider):
         companyname = self.changed_name(companyname_raw)
         employees = None
         sales = None
+        in_dnb = "Nein"
+        insolvent = "Nein"
 
         # Beide Zahlen müssen drüber sein:
         # (company_attribute[2] != "missing" and int(str(company_attribute[2]).replace(",", "")) >= 250) and
@@ -58,6 +60,7 @@ class Reviews(scrapy.Spider):
         #   float(str(company_attribute[3]).replace(",", "")) >= 40):
 
         if companyname in company_names:
+            in_dnb = "Ja"
             for company_attribute in company_attributes:
                 if company_attribute[0] == companyname:
                     if (company_attribute[2] != "missing" and int(str(company_attribute[2]).replace(",", "")) >= 250) or (company_attribute[3] != "missing" and float(str(company_attribute[3]).replace(",", "")) >= 40):
@@ -66,6 +69,8 @@ class Reviews(scrapy.Spider):
                     else:
                         employees = company_attribute[2]
                         sales = company_attribute[3]
+                        if company_attribute[7] == 1:
+                            insolvent = "Ja"
         else:
             print("Company not in dnb")
 
@@ -86,14 +91,14 @@ class Reviews(scrapy.Spider):
                     Bereich = Bereich.split('Bereich ')[1]
                     Bereich = Bereich.split(' bei')[0]
 
-                Dict = {'Unternehmen': companyname, 'Mitarbeiter': employees, 'Umsatz': sales,
+                Dict = {'Unternehmen': companyname, 'Insolvent': insolvent, 'In dnb': in_dnb, 'Mitarbeiter': employees, 'Umsatz': sales,
                         'Datum': review.css('time::attr(datetime)').get(),
                         'ReviewRating': review.css('span.index__score__16yy9::text').get(), 'Anstellung': Anstellung,
                         'Bereich': Bereich,
                         'ReviewTitel': review.css('h3.index__title__2uQec::text').get().replace(";", ".").replace(" - ",
                                                                                                                   ",")}
 
-                fieldnames = ['Unternehmen', 'Mitarbeiter', 'Umsatz', 'Datum', 'ReviewRating', 'Anstellung', 'Bereich',
+                fieldnames = ['Unternehmen', 'Insolvent', 'In dnb', 'Mitarbeiter', 'Umsatz', 'Datum', 'ReviewRating', 'Anstellung', 'Bereich',
                               'ReviewTitel',
                               'Was macht dein Arbeitgeber in Corona-Zeiten gut?',
                               'Was macht dein Arbeitgeber in Corona-Zeiten nicht gut?',
@@ -142,9 +147,9 @@ class Reviews(scrapy.Spider):
                             'ACHTUNG ACHTUNG ACHTUNG ACHTUNG ACHTUNG ACHTUNG ACHTUNG ACHTUNG ACHTUNG ACHTUNG ACHTUNG ACHTUNG ACHTUNG ACHTUNG ACHTUNG ACHTUNG: Faktor ist nicht in der Spaltenliste drin. Er heißt: ' + title)
 
                 # Write all the collected data in a new row in the csv file 'reviews.csv'
-                with open('reviews_IT.csv', 'a', newline='', encoding='utf-8') as f:
+                with open('reviews_Dienst.csv', 'a', newline='', encoding='utf-8') as f:
                     theWriter = csv.DictWriter(f, fieldnames=fieldnames, delimiter=";")
-                    if os.stat('reviews_IT.csv').st_size == 0:
+                    if os.stat('reviews_Dienst.csv').st_size == 0:
                         theWriter.writeheader()
                     theWriter.writerow(Dict)
             else:

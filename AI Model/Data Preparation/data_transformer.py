@@ -18,7 +18,7 @@ df = df[["Unternehmen", "Datum", "ReviewRating", "Arbeitsatmosphäre_s", "Image_
          "Kommunikation_s", "Gleichberechtigung_s", "Interessante Aufgaben_s"]]
 
 #------------------------ PARAMETERS ------------------------------#
-
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!PLEASE CHANGE AND PLAY WITH THESE PARAMETERS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # minimum amount of reviews per company
 min_reviews = 10
 

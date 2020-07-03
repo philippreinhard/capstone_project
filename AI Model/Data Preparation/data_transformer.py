@@ -22,24 +22,24 @@ df = df[["Unternehmen", "Datum", "ReviewRating", "Arbeitsatmosphäre_s", "Image_
 # minimum amount of reviews per company
 min_reviews = 10
 
-# amount of years to be returned, counting from year of most recent review. This will obviously return twice as #
-# many half_years.
+# amount of years to be returned, counting from year of most recent review. This will obviously return twice as
+# many half_years. This is required so that the samples for the AI model have constant length.
 # Beware: return_years should not be bigger than continuity, if you wish to ensure continuity in the samples
 return_years = 3
 
 # choose how many continuous years of at least 1 review per year the samples require, counting from most recent year
 # To avoid the continuity check, set continuity to -1
-continuity = 5
+continuity = 3
 
-# calc_arg specifies the resulting calculation that is returned in the dataframe tables.
-# 'prior': calculates the difference of the moving average score to the score the half_year before
-# 'first': calculates the difference of the moving average score to the first considered half_year score
+# calc_arg specifies the resulting calculation that is returned in the output file.
+# 'prior': calculates the differences of the moving average score to the score the half_year before
+# 'first': calculates the differences of the moving average score to the first considered half_year score
 #  'abs' : returns not the difference between moving average scores, but the scores themselves
 calc_arg = 'prior'
 
-# this boolean decides whether to drop the "Category" column, which contains the names of the individual scores, like
+# this boolean decides whether to drop the "Category" column in the ouput, which contains the names of the individual scores, like
 # Arbeitsatmosphäre etc. If you chose False, you will have to remove them manually later on.
-rem_category = False
+rem_category = True
 
 #------------------ MEHTOD DECLARATION ------------------------#
 def get_dates(dates):
@@ -298,7 +298,6 @@ for company in company_list[:]:
     # if company does not contain return_years years
     if result2.empty:
         continue
-
     # remove Category column, if True
     if rem_category:
         result2 = result2.drop("Category", axis=1)

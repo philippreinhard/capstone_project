@@ -5,26 +5,28 @@ import pandas as pd
 
 data = np.load('output/data_Beratung.npy', allow_pickle=True)
 
-data enthält dann eine Liste von Samples der Form[X, y]. Ein Sample entspricht einem Unternehmen.
+data enthält dann eine Liste von Samples der Form[X, y]. Ein Sample entspricht einem Unternehmen (siehe unten)
 X enthält multivariat entweder die laufenden Durchschnitte der einzelnen Rating-Kategorien über die Jahre oder die
 Unterschiede der laufenden Durchschnitte der einzelnen Rating-Kategorien über die Jahre, je nachdem was in
 data_transformer.py als Argument für calc_arg angegeben wurde.
 Fehlende Werte werden mit -1 angegeben. y ist die zu erklärende Variable und ist binär, 1 = insolvent, 0 = solvent.
 
-Die Kategorien der Zeilen von X lauten, in der Reihenfolge:
 
-"ReviewRating",
-"Arbeitsatmosphäre_s",
-"Image_s",
-"Work-Life-Balance_s",
-"Karriere/Weiterbildung_s",
-"Gehalt/Sozialleistungen_s",
-"Umwelt-/Sozialbewusstsein_s",
-"Kollegenzusammenhalt_s",
-"Umgang mit älteren Kollegen_s",
-"Vorgesetztenverhalten_s",
-"Arbeitsbedingungen_s",
-"Kommunikation_s",
-"Gleichberechtigung_s",
-"Interessante Aufgaben_s"
 
+Beispiel eines Samples (mit den Differenzen zum Vorjahr):
+
+                         Category  2017.0    2017.5    2018.0    2018.5    2019.0    2019.5
+0                    ReviewRating     0.0  0.101000  0.076029  0.014221  0.018260  0.002998
+1             Arbeitsatmosphäre_s     0.0  0.090000  0.066522  0.012228  0.016544  0.002570
+2                         Image_s     0.0  0.096667  0.071449  0.013134  0.007966  0.002856
+3             Work-Life-Balance_s     0.0  0.141000  0.104987  0.021903  0.029634  0.004603
+4        Karriere/Weiterbildung_s     0.0  0.096667  0.071449  0.013134  0.017770  0.002760
+5       Gehalt/Sozialleistungen_s     0.0  0.100167  0.074036  0.013610  0.018413  0.002860
+6     Umwelt-/Sozialbewusstsein_s     0.0  0.110197  0.081450  0.014972  0.020257  0.003147
+7          Kollegenzusammenhalt_s     0.0  0.023333  0.017246  0.003170  0.004289  0.000666
+8   Umgang mit älteren Kollegen_s     0.0  0.162428  0.131806  0.024158  0.032649  0.000000
+9         Vorgesetztenverhalten_s     0.0  0.113333  0.083768  0.015399  0.020833  0.003236
+10           Arbeitsbedingungen_s     0.0  0.113833  0.084138  0.015466  0.020925  0.003251
+11                Kommunikation_s     0.0  0.107333  0.079333  0.014583  0.019730  0.003065
+12           Gleichberechtigung_s     0.0  0.063333  0.046812  0.008605  0.011642  0.000000
+13        Interessante Aufgaben_s     0.0  0.100000  0.073913  0.013587  0.018382  0.002856

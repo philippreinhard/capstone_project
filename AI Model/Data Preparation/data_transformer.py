@@ -25,7 +25,7 @@ min_reviews = 10
 # amount of years to be returned, counting from year of most recent review. This will obviously return twice as #
 # many half_years.
 # Beware: return_years should not be bigger than continuity, if you wish to ensure continuity in the samples
-return_years = 6
+return_years = 3
 
 # choose how many continuous years of at least 1 review per year the samples require, counting from most recent year
 # To avoid the continuity check, set continuity to -1

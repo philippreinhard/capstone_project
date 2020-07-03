@@ -1,0 +1,30 @@
+Die data Dateien des outputs von data_transformer.py sind wie folgt zu laden:
+
+import numpy as np
+import pandas as pd
+
+data = np.load('output/data_Beratung.npy', allow_pickle=True)
+
+data enthält dann eine Liste von Samples der Form[X, y]. Ein Sample entspricht einem Unternehmen.
+X enthält multivariat entweder die laufenden Durchschnitte der einzelnen Rating-Kategorien über die Jahre oder die
+Unterschiede der laufenden Durchschnitte der einzelnen Rating-Kategorien über die Jahre, je nachdem was in
+data_transformer.py als Argument für calc_arg angegeben wurde.
+Fehlende Werte werden mit -1 angegeben. y ist die zu erklärende Variable und ist binär, 1 = insolvent, 0 = solvent.
+
+Die Kategorien der Zeilen von X lauten, in der Reihenfolge:
+
+"ReviewRating",
+"Arbeitsatmosphäre_s",
+"Image_s",
+"Work-Life-Balance_s",
+"Karriere/Weiterbildung_s",
+"Gehalt/Sozialleistungen_s",
+"Umwelt-/Sozialbewusstsein_s",
+"Kollegenzusammenhalt_s",
+"Umgang mit älteren Kollegen_s",
+"Vorgesetztenverhalten_s",
+"Arbeitsbedingungen_s",
+"Kommunikation_s",
+"Gleichberechtigung_s",
+"Interessante Aufgaben_s"
+

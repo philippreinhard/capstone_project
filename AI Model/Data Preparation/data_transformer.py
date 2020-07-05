@@ -1,16 +1,29 @@
 import json
 import numpy as np
 import pandas as pd
+from sys import *
+import os
 
 data_path = "model_data/"
 pd.set_option('display.width', 100)
 pd.set_option('display.max_columns',20)
 
 
-with open(data_path + 'new_company_attributes_Beratung_merged.json', 'r') as file:
+print("Initializing...")
+
+with open(data_path + 'new_company_attributes_merged.json', 'r') as file:
     company_list = json.load(file)
 
-df = pd.read_csv(data_path + "reviews_Beratung_filtered.csv")
+# remove duplicates in company_list
+company_list_unique = []
+for company in company_list:
+    if  company in company_list_unique:
+        continue;
+    else:
+        company_list_unique.append(company)
+company_list = company_list_unique
+
+df = pd.read_csv(data_path + "reviews_merged.csv")
 df.head()
 df = df[["Unternehmen", "Datum", "ReviewRating", "Arbeitsatmosphäre_s", "Image_s", "Work-Life-Balance_s",
          "Karriere/Weiterbildung_s", "Gehalt/Sozialleistungen_s", "Umwelt-/Sozialbewusstsein_s",
@@ -29,7 +42,7 @@ return_years = 3
 
 # choose how many continuous years of at least 1 review per year the samples require, counting from most recent year
 # To avoid the continuity check, set continuity to -1
-continuity = 3
+continuity = -1
 
 # calc_arg specifies the resulting calculation that is returned in the output file.
 # 'prior': calculates the differences of the moving average score to the score the half_year before
@@ -269,7 +282,11 @@ data = []
 print("Running script with continuity = " + str(continuity) + " and return_years = " + str(return_years) + ". Please wait.")
 
 #iterate companies
+index = 0
 for company in company_list[:]:
+    if(index%100 == 0):
+        print(str(index) + "/" + str(len(company_list)))
+    index +=1
     # get parameters from attribute list
     old_name = company[0]
     n_employees = company[2]
@@ -325,4 +342,4 @@ for company in company_list[:]:
 
 print("Done!")
 print("Your dataset contains " + str(len(data)) + " samples, of which " + str(count_insolvencies) + " are bankrupt.")
-np.save('output/data_Beratung.npy', data, allow_pickle=True)
+np.save('output/data.npy', data, allow_pickle=True)

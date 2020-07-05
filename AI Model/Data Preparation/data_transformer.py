@@ -20,16 +20,16 @@ df = df[["Unternehmen", "Datum", "ReviewRating", "Arbeitsatmosphäre_s", "Image_
 #------------------------ PARAMETERS ------------------------------#
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!PLEASE CHANGE AND PLAY WITH THESE PARAMETERS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # minimum amount of reviews per company
-min_reviews = 10
+min_reviews = 5
 
 # amount of years to be returned, counting from year of most recent review. This will obviously return twice as
 # many half_years. This is required so that the samples for the AI model have constant length.
 # Beware: return_years should not be bigger than continuity, if you wish to ensure continuity in the samples
-return_years = 3
+return_years = 2
 
 # choose how many continuous years of at least 1 review per year the samples require, counting from most recent year
 # To avoid the continuity check, set continuity to -1
-continuity = 3
+continuity = -1
 
 # calc_arg specifies the resulting calculation that is returned in the output file.
 # 'prior': calculates the differences of the moving average score to the score the half_year before

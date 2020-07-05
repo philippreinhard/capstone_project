@@ -70,6 +70,9 @@ def get_outter_timestamps(comp_reviews):
     # we do not consider 2020, so reduce it to 2019
     if max_timestamp >= 2020:
         max_timestamp = 2019.5
+
+    if min_timestamp >= 2020:
+        min_timestamp = 2019.5
     #print(max_timestamp, min_timestamp)
     #print(max_timestamp-min_timestamp)
     return max_timestamp, min_timestamp
@@ -309,7 +312,7 @@ for company in company_list[:]:
     if rem_category:
         result2 = result2.drop("Category", axis=1)
     columns = list(result2.columns)
-    X = result.to_numpy()
+    X = result2.to_numpy()
     sample = [X, insolvency]
     data.append(sample)
 

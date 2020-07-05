@@ -20,16 +20,16 @@ df = df[["Unternehmen", "Datum", "ReviewRating", "Arbeitsatmosphäre_s", "Image_
 #------------------------ PARAMETERS ------------------------------#
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!PLEASE CHANGE AND PLAY WITH THESE PARAMETERS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # minimum amount of reviews per company
-min_reviews = 5
+min_reviews = 7
 
 # amount of years to be returned, counting from year of most recent review. This will obviously return twice as
 # many half_years. This is required so that the samples for the AI model have constant length.
 # Beware: return_years should not be bigger than continuity, if you wish to ensure continuity in the samples
-return_years = 2
+return_years = 3
 
 # choose how many continuous years of at least 1 review per year the samples require, counting from most recent year
 # To avoid the continuity check, set continuity to -1
-continuity = -1
+continuity = 3
 
 # calc_arg specifies the resulting calculation that is returned in the output file.
 # 'prior': calculates the differences of the moving average score to the score the half_year before
@@ -70,6 +70,8 @@ def get_outter_timestamps(comp_reviews):
     # we do not consider 2020, so reduce it to 2019
     if max_timestamp >= 2020:
         max_timestamp = 2019.5
+    #print(max_timestamp, min_timestamp)
+    #print(max_timestamp-min_timestamp)
     return max_timestamp, min_timestamp
 
 
@@ -108,7 +110,7 @@ def calculate_average(comp_reviews, col, half_year, last_weight, last_avg):
         values2.append(value2)
     values = pd.Series(values2)
 
-    #  calculate indivudial weight and average of this half year alone
+    #  calculate individual weight and average of this half year alone
     ind_weight = values.size
     ind_average = values.mean(skipna=True)
 
@@ -283,6 +285,9 @@ for company in company_list[:]:
     #get all reviews where company name matches company
     comp_reviews = df.loc[df['Unternehmen'] == old_name]
 
+    #print(old_name)
+    #print(len(comp_reviews))
+
     # check if company has enough reviews
     if len(comp_reviews) < min_reviews:
         continue
@@ -291,12 +296,14 @@ for company in company_list[:]:
     result = handle_data(comp_reviews, continuity)
     # if company does not contain the amount of continuous review years from last timestamp
     if result.empty:
+        #print("continuity failed")
         continue
 
     # take moving averages and calculate half_yearly differences
     result2 = return_specified_years(result, return_years, calc_arg)
     # if company does not contain return_years years
     if result2.empty:
+        #print("return_years failed")
         continue
     # remove Category column, if True
     if rem_category:

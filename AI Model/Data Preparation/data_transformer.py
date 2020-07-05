@@ -6,8 +6,7 @@ import os
 
 data_path = "model_data/"
 pd.set_option('display.width', 100)
-pd.set_option('display.max_columns',20)
-
+pd.set_option('display.max_columns', 20)
 
 print("Initializing...")
 
@@ -17,7 +16,7 @@ with open(data_path + 'new_company_attributes_merged.json', 'r') as file:
 # remove duplicates in company_list
 company_list_unique = []
 for company in company_list:
-    if  company in company_list_unique:
+    if company in company_list_unique:
         continue;
     else:
         company_list_unique.append(company)
@@ -30,7 +29,7 @@ df = df[["Unternehmen", "Datum", "ReviewRating", "Arbeitsatmosphäre_s", "Image_
          "Kollegenzusammenhalt_s", "Umgang mit älteren Kollegen_s", "Vorgesetztenverhalten_s", "Arbeitsbedingungen_s",
          "Kommunikation_s", "Gleichberechtigung_s", "Interessante Aufgaben_s"]]
 
-#------------------------ PARAMETERS ------------------------------#
+# ------------------------ PARAMETERS ------------------------------#
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!PLEASE CHANGE AND PLAY WITH THESE PARAMETERS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # minimum amount of reviews per company
 min_reviews = 7
@@ -54,9 +53,9 @@ calc_arg = 'prior'
 # Arbeitsatmosphäre etc. If you chose False, you will have to remove them manually later on.
 rem_category = True
 
-#------------------ MEHTOD DECLARATION ------------------------#
-def get_dates(dates):
 
+# ------------------ MEHTOD DECLARATION ------------------------#
+def get_dates(dates):
     # takes the timestamps and transforms them into half years
 
     years = []
@@ -74,7 +73,6 @@ def get_dates(dates):
 
 
 def get_outter_timestamps(comp_reviews):
-
     # get largest and smallest half years of the datasample
 
     max_timestamp = comp_reviews["HalfYear"].max()
@@ -86,8 +84,8 @@ def get_outter_timestamps(comp_reviews):
 
     if min_timestamp >= 2020:
         min_timestamp = 2019.5
-    #print(max_timestamp, min_timestamp)
-    #print(max_timestamp-min_timestamp)
+    # print(max_timestamp, min_timestamp)
+    # print(max_timestamp-min_timestamp)
     return max_timestamp, min_timestamp
 
 
@@ -97,7 +95,7 @@ def create_half_yearly_range(last_timestamp, first_timestamp):
     stamp = first_timestamp
     stamps = []
 
-    #insert first stamp to list already
+    # insert first stamp to list already
     stamps.append(stamp)
     # increase timestamp by 0.5 in every iteration until it equals the last stamp
     while stamp != last_timestamp:
@@ -176,10 +174,10 @@ def check_data_continuity(comp_reviews, last_timestamp, first_timestamp, continu
     # make years to string to be comparable with years in Series, this is bullshit
     comp_reviews["HalfYear"] = comp_reviews["HalfYear"].apply(lambda x: str(x))
 
-    year_range = int(last_timestamp) - int(first_timestamp)+1
-    #iterate backwards over required years
+    year_range = int(last_timestamp) - int(first_timestamp) + 1
+    # iterate backwards over required years
     for index in reversed(range(0, year_range)):
-        year = int(first_timestamp)+index
+        year = int(first_timestamp) + index
         # if continuity is 0, we have reached enough continuous years and can return True
         if continuity_required == 0:
             return True
@@ -193,7 +191,7 @@ def check_data_continuity(comp_reviews, last_timestamp, first_timestamp, continu
 def handle_data(comp_reviews, continuity):
     # split datum timestamp into the relevant properties
     years, half_years = get_dates(comp_reviews["Datum"])
-    comp_reviews = comp_reviews.assign(HalfYear = half_years, Year = years)
+    comp_reviews = comp_reviews.assign(HalfYear=half_years, Year=years)
     comp_reviews = comp_reviews.drop('Datum', axis=1)
 
     # extract first and last timestamps of Series
@@ -224,7 +222,7 @@ def calculate_differences_to_first(df):
             new_elem = elem - first_elem
             new_elems.append(new_elem)
         new_df_list.append(new_elems)
-    new_df = pd.DataFrame(new_df_list, columns = df.columns)
+    new_df = pd.DataFrame(new_df_list, columns=df.columns)
     return new_df
 
 
@@ -254,11 +252,11 @@ def calculate_differences_to_prior(df):
 
 def return_specified_years(df, return_years, calc_arg):
     # check if there are enough years to be displayed. If not, exit by returning empty dataframe
-    if(df.columns.size-1 < 2*return_years):
+    if (df.columns.size - 1 < 2 * return_years):
         return pd.DataFrame()
 
     # select the (2*return_years) last columns of the dataframe (each column is a half_year
-    df1 = df.iloc[:,-(2*return_years):]
+    df1 = df.iloc[:, -(2 * return_years):]
 
     # forward to the correct method
     if calc_arg == 'abs':
@@ -272,41 +270,44 @@ def return_specified_years(df, return_years, calc_arg):
     df2.insert(0, "Category", df["Category"])
     return df2
 
-#--------------------------------------------------------------#
 
+# --------------------------------------------------------------#
 
 
 # list for final data entries [X,y]
-data = []
+X = []
+Y = []
+print("Running script with continuity = " + str(continuity) + " and return_years = " + str(
+    return_years) + ". Please wait.")
 
-print("Running script with continuity = " + str(continuity) + " and return_years = " + str(return_years) + ". Please wait.")
-
-#iterate companies
+# iterate companies
 index = 0
 for company in company_list[:]:
-    if(index%100 == 0):
+    if (index % 100 == 0):
         print(str(index) + "/" + str(len(company_list)))
-    index +=1
+    index+=1
     # get parameters from attribute list
     old_name = company[0]
     n_employees = company[2]
     n_sales = company[3]
     insolvency = company[7]
+    if insolvency == -1 or insolvency == "":
+        continue
 
-    #filter big companies, continue if company is too big
+    # filter big companies, continue if company is too big
     if n_employees == "missing" and n_sales == "missing":
         None
     elif (n_employees == "missing" and float(n_sales.replace(",", "")) >= 40) or (
             n_sales == "missing" and int(n_employees.replace(",", "")) >= 250) or (
             n_employees != "missing" and n_sales != "missing" and float(n_sales.replace(",", "")) >= 40 and int(
-            n_employees.replace(",", "")) >= 250):
+        n_employees.replace(",", "")) >= 250):
         continue
 
-    #get all reviews where company name matches company
+    # get all reviews where company name matches company
     comp_reviews = df.loc[df['Unternehmen'] == old_name]
 
-    #print(old_name)
-    #print(len(comp_reviews))
+    # print(old_name)
+    # print(len(comp_reviews))
 
     # check if company has enough reviews
     if len(comp_reviews) < min_reviews:
@@ -316,30 +317,43 @@ for company in company_list[:]:
     result = handle_data(comp_reviews, continuity)
     # if company does not contain the amount of continuous review years from last timestamp
     if result.empty:
-        #print("continuity failed")
+        # print("continuity failed")
         continue
 
     # take moving averages and calculate half_yearly differences
     result2 = return_specified_years(result, return_years, calc_arg)
     # if company does not contain return_years years
     if result2.empty:
-        #print("return_years failed")
+        # print("return_years failed")
         continue
     # remove Category column, if True
     if rem_category:
         result2 = result2.drop("Category", axis=1)
     columns = list(result2.columns)
-    X = result2.to_numpy()
-    sample = [X, insolvency]
-    data.append(sample)
+    x = result2.to_numpy(dtype=float)
 
-    #statistics
+    #swap axis of array
+    x = np.swapaxes(x, 0,1)
+    y = insolvency
+
+
+
+    X.append(x)
+    Y.append(y)
+
+    Xnp = np.array(X)
+    Ynp = np.array(Y)
+
+
+    # statistics
     count_insolvencies = 0
-    for d in data:
-        if d[1] == 1:
-            count_insolvencies += 1
+    # for d in data:
+    #  if d[1] == 1:
+    #       count_insolvencies += 1
 
-
+print(Xnp.shape)
+print(Ynp.shape)
 print("Done!")
-print("Your dataset contains " + str(len(data)) + " samples, of which " + str(count_insolvencies) + " are bankrupt.")
-np.save('output/data.npy', data, allow_pickle=True)
+print("Your dataset contains " + str(Xnp.size) + " samples, of which " + str(count_insolvencies) + " are bankrupt.")
+np.save('output/X.npy', X, allow_pickle=True)
+np.save('output/Y.npy', Y, allow_pickle=True)

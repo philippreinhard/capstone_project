@@ -1,19 +1,20 @@
-Die data Dateien des outputs von data_transformer.py sind wie folgt zu laden:
+Die X und Y Dateien des outputs von data_transformer.py sind wie folgt zu laden:
 
 import numpy as np
 import pandas as pd
 
-data = np.load('output/data_Beratung.npy', allow_pickle=True)
+X = np.load('output/X.npy', allow_pickle=True)
+Y = np.load('output/Y.npy', allow_pickle=True)
 
-data enthält dann eine Liste von Samples der Form[X, y]. Ein Sample entspricht einem Unternehmen (siehe unten)
+X ist ein numpy array der Samples. Ein Sample entspricht einem Unternehmen (siehe unten)
 X enthält multivariat entweder die laufenden Durchschnitte der einzelnen Rating-Kategorien über die Jahre oder die
 Unterschiede der laufenden Durchschnitte der einzelnen Rating-Kategorien über die Jahre, je nachdem was in
 data_transformer.py als Argument für calc_arg angegeben wurde.
-Fehlende Werte werden mit -1 angegeben. y ist die zu erklärende Variable und ist binär, 1 = insolvent, 0 = solvent.
+Y ist die Liste der zu erklärenden Variablen und enthält nur 0 und 1. 1 = insolvent, 0 = solvent.
 
 
 
-Beispiel eines Samples (mit den Differenzen zum Vorjahr):
+Beispiel eines Samples mit den Differenzen zum Vorjahr (Kategorien und Jahreszahlen sind in den Samples nicht vorhanden):
 
                          Category  2017.0    2017.5    2018.0    2018.5    2019.0    2019.5
 0                    ReviewRating     0.0  0.101000  0.076029  0.014221  0.018260  0.002998

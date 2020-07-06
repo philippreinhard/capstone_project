@@ -1,0 +1,3 @@
+# Excludes all files starting with 'captcha'
+
+captcha*

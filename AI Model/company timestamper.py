@@ -94,5 +94,5 @@ for company in company_list:
 
     index+=1
 
-with open('company_timestamps.json', 'w') as f:
+with open('../Bundesanzeiger Scraper/company_timestamps.json', 'w') as f:
     json.dump(new_company_list, f)

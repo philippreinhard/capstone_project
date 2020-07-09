@@ -14,13 +14,17 @@ with open(data_path + 'new_company_attributes_merged.json', 'r') as file:
     company_list = json.load(file)
 
 # remove duplicates in company_list
+insolvencies = 0
 company_list_unique = []
 for company in company_list:
+    if company[7] == int(1):
+        insolvencies+=1
     if company in company_list_unique:
         continue;
     else:
         company_list_unique.append(company)
 company_list = company_list_unique
+#print(insolvencies)
 
 df = pd.read_csv(data_path + "reviews_merged.csv")
 df.head()
@@ -32,7 +36,7 @@ df = df[["Unternehmen", "Datum", "ReviewRating", "Arbeitsatmosphäre_s", "Image_
 # ------------------------ PARAMETERS ------------------------------#
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!PLEASE CHANGE AND PLAY WITH THESE PARAMETERS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # minimum amount of reviews per company
-min_reviews = 7
+min_reviews = 5
 
 # amount of years to be returned, counting from year of most recent review. This will obviously return twice as
 # many half_years. This is required so that the samples for the AI model have constant length.
@@ -47,7 +51,7 @@ continuity = -1
 # 'prior': calculates the differences of the moving average score to the score the half_year before
 # 'first': calculates the differences of the moving average score to the first considered half_year score
 #  'abs' : returns not the difference between moving average scores, but the scores themselves
-calc_arg = 'prior'
+calc_arg = 'abs'
 
 # this boolean decides whether to drop the "Category" column in the ouput, which contains the names of the individual scores, like
 # Arbeitsatmosphäre etc. If you chose False, you will have to remove them manually later on.
@@ -337,7 +341,6 @@ for company in company_list[:]:
     y = insolvency
 
 
-
     X.append(x)
     Y.append(y)
 
@@ -345,15 +348,10 @@ for company in company_list[:]:
     Ynp = np.array(Y)
 
 
-    # statistics
-    count_insolvencies = 0
-    # for d in data:
-    #  if d[1] == 1:
-    #       count_insolvencies += 1
-
 print(Xnp.shape)
 print(Ynp.shape)
+
 print("Done!")
-print("Your dataset contains " + str(Xnp.size) + " samples, of which " + str(count_insolvencies) + " are bankrupt.")
-np.save('output/X.npy', X, allow_pickle=True)
-np.save('output/Y.npy', Y, allow_pickle=True)
+print("Your dataset contains " + str(Xnp.shape[0]) + " samples, of which " + str(np.count_nonzero(Ynp)) + " are bankrupt.")
+np.save('output/X.npy', Xnp, allow_pickle=True)
+np.save('output/Y.npy', Ynp, allow_pickle=True)

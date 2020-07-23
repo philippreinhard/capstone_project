@@ -5,15 +5,16 @@ import csv
 import pandas as pd
 import json
 import os
+import time
 # for german numbers
-import decimal
-import locale
+# import decimal
+# import locale
 # other:
-import re  # regex
-from IPython.display import clear_output
+# import re  # regex
+# from IPython.display import clear_output
 
 debug_prints = True
-
+start_time = time.time()
 
 def clear():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -36,7 +37,7 @@ except Exception as e:
     print("couldn't read JSON file!", repr(e))
     pass
 
-# get list of all files in folder 'scraped_data'
+# get list of all files directly residing in folder 'scraped_data'
 document_list = []
 for root, dirs, files in os.walk('scraped_data'):
     document_list.extend(files)
@@ -85,6 +86,7 @@ for item in document_list:
             try:
                 if soup.find("h3", class_="z_titel") is not None:
                     unternehmen_infile = soup.find("h3", class_="z_titel").get_text(separator=" ")
+                    unternehmen_infile = " ".join(unternehmen_infile.split())
                 elif soup.find("h3") is not None:
                     unternehmen_infile = soup.find("h3").get_text(separator=" ")
                 else:
@@ -129,3 +131,4 @@ try:
 except PermissionError as e:
     print("could not export file because of PermissionError, please try again!!")
 print("Done!")
+print("--- %s seconds ---" % (time.time() - start_time))

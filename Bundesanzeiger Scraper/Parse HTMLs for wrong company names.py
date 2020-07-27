@@ -16,6 +16,7 @@ import time
 debug_prints = True
 start_time = time.time()
 
+
 def clear():
     os.system('cls' if os.name == 'nt' else 'clear')
 
@@ -93,6 +94,7 @@ for item in document_list:
                     unternehmen_infile = '#VALUE!'
             except AttributeError as e:
                 print(item, 'An error occured while searching for h3!', repr(e))
+                unternehmen_infile = ''
 
             try:
                 if soup.find("h4", class_="z_titel") is not None:
@@ -103,6 +105,7 @@ for item in document_list:
                     ort_infile = '#VALUE!'
             except AttributeError as e:
                 print(item, 'An error occured while searching for h4!', repr(e))
+                ort_infile = ''
 
             company_index = find_it(item[0:-16], company_names)
             if company_index is not None:

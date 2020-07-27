@@ -38,7 +38,7 @@ for item in document_list:
             # print("> scanning document:", overall_counter, "/", count_of_documentlist, "--", item)
             # print(len(matchlist), 'matches:', matchlist)
 
-            if len(matchlist) < 3:
+            if len(matchlist) < 2:
                 try:
                     filename_from = os.path.join(basepath_from, item)
                     filename_to = os.path.join(basepath_to, item)

@@ -1,9 +1,12 @@
 import os
 import pandas as pd
 
+cwd = os.getcwd()
+filepath = os.path.join(cwd, 'wrong company names analysis', 'files_to_be_moved.csv')
+
 # read input CSV
 try:
-    df = pd.read_csv('wrong company names analysis/files_to_be_moved.csv', header=0, names=['filenames'])
+    df = pd.read_csv(filepath, header=0, names=['filenames'])
 except Exception as e:
     print('An exception occured while reading the CSV:', repr(e))
     df = None

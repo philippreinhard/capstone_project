@@ -1,0 +1,33 @@
+Die X und Y Dateien des outputs von data_transformer.py sind wie folgt zu laden:
+
+import numpy as np
+import pandas as pd
+
+X = np.load('output/X.npy', allow_pickle=True)
+Y = np.load('output/Y.npy', allow_pickle=True)
+
+X ist ein numpy array der Samples. Ein Sample entspricht einem Unternehmen (siehe unten)
+X enthält multivariat entweder die laufenden Durchschnitte der einzelnen Rating-Kategorien über die Jahre oder die
+Unterschiede der laufenden Durchschnitte der einzelnen Rating-Kategorien über die Jahre, je nachdem was in
+data_transformer.py als Argument für calc_arg angegeben wurde.
+Y ist die Liste der zu erklärenden Variablen und enthält nur 0 und 1. 1 = insolvent, 0 = solvent.
+
+
+
+Beispiel eines Samples mit den Differenzen zum Vorjahr (Kategorien und Jahreszahlen sind in den Samples nicht vorhanden):
+
+                         Category  2017.0    2017.5    2018.0    2018.5    2019.0    2019.5
+0                    ReviewRating     0.0  0.101000  0.076029  0.014221  0.018260  0.002998
+1             Arbeitsatmosphäre_s     0.0  0.090000  0.066522  0.012228  0.016544  0.002570
+2                         Image_s     0.0  0.096667  0.071449  0.013134  0.007966  0.002856
+3             Work-Life-Balance_s     0.0  0.141000  0.104987  0.021903  0.029634  0.004603
+4        Karriere/Weiterbildung_s     0.0  0.096667  0.071449  0.013134  0.017770  0.002760
+5       Gehalt/Sozialleistungen_s     0.0  0.100167  0.074036  0.013610  0.018413  0.002860
+6     Umwelt-/Sozialbewusstsein_s     0.0  0.110197  0.081450  0.014972  0.020257  0.003147
+7          Kollegenzusammenhalt_s     0.0  0.023333  0.017246  0.003170  0.004289  0.000666
+8   Umgang mit älteren Kollegen_s     0.0  0.162428  0.131806  0.024158  0.032649  0.000000
+9         Vorgesetztenverhalten_s     0.0  0.113333  0.083768  0.015399  0.020833  0.003236
+10           Arbeitsbedingungen_s     0.0  0.113833  0.084138  0.015466  0.020925  0.003251
+11                Kommunikation_s     0.0  0.107333  0.079333  0.014583  0.019730  0.003065
+12           Gleichberechtigung_s     0.0  0.063333  0.046812  0.008605  0.011642  0.000000
+13        Interessante Aufgaben_s     0.0  0.100000  0.073913  0.013587  0.018382  0.002856

@@ -1,6 +1,7 @@
 import json
 import numpy as np
 import pandas as pd
+import math
 from sys import *
 import os
 
@@ -11,27 +12,30 @@ pd.set_option('display.max_columns', 20)
 print("Initializing...")
 
 with open(data_path + 'new_company_attributes_merged.json', 'r') as file:
-    company_list = json.load(file)
+    company_attribute_list = json.load(file)
+
+company_bundesanzeiger_entries = pd.read_csv(data_path + 'company_attributes_eqk.csv', sep=";")
 
 # remove duplicates in company_list
 insolvencies = 0
 company_list_unique = []
-for company in company_list:
+for company in company_attribute_list:
     if company[7] == int(1):
-        insolvencies+=1
+        insolvencies += 1
     if company in company_list_unique:
         continue;
     else:
         company_list_unique.append(company)
-company_list = company_list_unique
-#print(insolvencies)
+company_attribute_list = company_list_unique
+# print(insolvencies)
 
-df = pd.read_csv(data_path + "reviews_merged.csv")
-df.head()
-df = df[["Unternehmen", "Datum", "ReviewRating", "Arbeitsatmosphäre_s", "Image_s", "Work-Life-Balance_s",
-         "Karriere/Weiterbildung_s", "Gehalt/Sozialleistungen_s", "Umwelt-/Sozialbewusstsein_s",
-         "Kollegenzusammenhalt_s", "Umgang mit älteren Kollegen_s", "Vorgesetztenverhalten_s", "Arbeitsbedingungen_s",
-         "Kommunikation_s", "Gleichberechtigung_s", "Interessante Aufgaben_s"]]
+company_reviews = pd.read_csv(data_path + "reviews_merged_clean.csv")
+company_reviews.head()
+company_reviews = company_reviews[
+    ["Unternehmen", "Datum", "ReviewRating", "Arbeitsatmosphäre_s", "Image_s", "Work-Life-Balance_s",
+     "Karriere/Weiterbildung_s", "Gehalt/Sozialleistungen_s", "Umwelt-/Sozialbewusstsein_s",
+     "Kollegenzusammenhalt_s", "Umgang mit älteren Kollegen_s", "Vorgesetztenverhalten_s", "Arbeitsbedingungen_s",
+     "Kommunikation_s", "Gleichberechtigung_s", "Interessante Aufgaben_s"]]
 
 # ------------------------ PARAMETERS ------------------------------#
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!PLEASE CHANGE AND PLAY WITH THESE PARAMETERS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -43,112 +47,103 @@ min_reviews = 5
 # Beware: return_years should not be bigger than continuity, if you wish to ensure continuity in the samples
 return_years = 3
 
-# choose how many continuous years of at least 1 review per year the samples require, counting from most recent year
-# To avoid the continuity check, set continuity to -1
-continuity = -1
+# choose how many continuous years of at least 1 review per year the samples require
+# To avoid the continuity check, set continuity to False
+continuity = False
 
-# calc_arg specifies the resulting calculation that is returned in the output file.
+# calc_arg_reviews specifies the resulting calculation of the differneces that is returned in the output file.
 # 'prior': calculates the differences of the moving average score to the score the half_year before
 # 'first': calculates the differences of the moving average score to the first considered half_year score
 #  'abs' : returns not the difference between moving average scores, but the scores themselves
-calc_arg = 'abs'
+calc_arg_reviews = 'first'
+
+#  calc_arg_entries specifies the resulting calculation of the EK-Quote in the output file.
+# 'abs': calculates the difference in "Prozentpunkten" between the EKQ of two years
+# 'rel': calculates the percental difference between the EKQ of two years. Please note the difference to "abs".
+calc_arg_entries = 'abs'
 
 # this boolean decides whether to drop the "Category" column in the ouput, which contains the names of the individual scores, like
-# Arbeitsatmosphäre etc. If you chose False, you will have to remove them manually later on.
+# Arbeitsatmosphäre etc. If you chose False, you will have to remove them manually later on. This has no effect on the
+# calculations
 rem_category = True
 
+# this boolean decides wether to use the year before the first year in our 3-year review window as an anchorpoint
+# for our difference calculation. If this is set to False, the first year will always contain 0s only, because there is
+# no difference between the first year and the anchor year (which is the first year).
+use_prior = True
 
-# ------------------ MEHTOD DECLARATION ------------------------#
-def get_dates(dates):
-    # takes the timestamps and transforms them into half years
 
-    years = []
-    half_years = []
-    for date in dates:
+# ------------------ METHOD DECLARATION ------------------------#
+# returns a list of all years that occur in the comp_reviews dataframe for one company
+def get_all_review_years(comp_reviews):
+    years = set()
+    for date in comp_reviews["Datum"]:
         year, month = date.split("-")[:2]
-        if int(month) in range(1, 7):
-            half_year = int(year)
+        years.add(year)
+    return [int(i) for i in sorted(years)]
+
+# returns a list of all years that occur in the comp_entries dataframe for one company
+def get_all_entry_years(comp_entries):
+    years = set()
+    for date in comp_entries["JA_von"]:
+        if isinstance(date, str):
+            day, month, year = date.split(".")
         else:
-            half_year = int(year) + 0.5
+            continue
+        years.add(year)
+    return [int(i) for i in sorted(years)]
 
-        half_years.append(half_year)
-        years.append(int(year))
-    return years, half_years
-
-
-def get_outter_timestamps(comp_reviews):
-    # get largest and smallest half years of the datasample
-
-    max_timestamp = comp_reviews["HalfYear"].max()
-    min_timestamp = comp_reviews["HalfYear"].min()
-
-    # we do not consider 2020, so reduce it to 2019
-    if max_timestamp >= 2020:
-        max_timestamp = 2019.5
-
-    if min_timestamp >= 2020:
-        min_timestamp = 2019.5
-    # print(max_timestamp, min_timestamp)
-    # print(max_timestamp-min_timestamp)
-    return max_timestamp, min_timestamp
+# figures out the years that are eligible to become a datapoint
+def get_eligible_years(review_years, entry_years, return_years, continuity, use_prior):
+    possible_years = []
+    if use_prior:
+        return_years+=1
 
 
-def create_half_yearly_range(last_timestamp, first_timestamp):
-    # create a list of half years
+    for entry_year in entry_years:
 
-    stamp = first_timestamp
-    stamps = []
+        do_append = True
+        # check for successor entry year
+        if not entry_year + 1 in entry_years:
+            continue
 
-    # insert first stamp to list already
-    stamps.append(stamp)
-    # increase timestamp by 0.5 in every iteration until it equals the last stamp
-    while stamp != last_timestamp:
-        stamp += 0.5;
-        stamps.append(stamp)
+        # check if continuity is required throughout years
+        if continuity:
 
-    return stamps
+            for i in range(0, return_years):
+                if (entry_year - i in review_years):
+                    pass
+                else:
+                    do_append = False
+                    break
+            if do_append:
+                possible_years.append(entry_year)
 
+        ## else, if continuity is not required, just check for minimum year
+        else:
+            if min(review_years) <= entry_year - return_years+1 and entry_year in review_years:
+                possible_years.append(entry_year)
 
-def calculate_average(comp_reviews, col, half_year, last_weight, last_avg):
-    # make all years to ints
-    comp_reviews["HalfYear"] = comp_reviews["HalfYear"].apply(lambda x: float(x))
+    return possible_years
 
-    # find values in the current ratings column where half_year is the currently looked at half_year
-    values = comp_reviews[col].loc[comp_reviews['HalfYear'] == half_year]
+# creates a dataframe with all the averages for all occuring years
+def create_review_space(comp_reviews):
 
-    values2 = []
+    # split datum timestamp into the relevant properties
+    years, half_years = get_review_dates(comp_reviews["Datum"])
+    comp_reviews = comp_reviews.assign(HalfYear=half_years, Year=years)
+    comp_reviews = comp_reviews.drop('Datum', axis=1)
 
-    # replace decimal seperator "," with "."
-    for value in values:
-        value2 = value
-        try:
-            value2 = float(value.replace(",", "."))
-        except:
-            pass
-        values2.append(value2)
-    values = pd.Series(values2)
+    # extract first and last timestamps of Series
+    last_timestamp, first_timestamp = get_outter_timestamps(comp_reviews)
 
-    #  calculate individual weight and average of this half year alone
-    ind_weight = values.size
-    ind_average = values.mean(skipna=True)
-
-    # if individual average is NaN
-    if not isinstance(ind_average, np.float64):
-        return last_avg, last_weight
-
-    # if this is the first year or the previous year still doesnt have an average
-    if last_avg == -1:
-        return ind_average, ind_weight
-    else:
-        # calculate the moving average of the current year, taking into account all previous years and weighing them
-        # according to their number of reviews
-        average = (ind_average * ind_weight + last_avg * last_weight) / (ind_weight + last_weight)
-        return average, (ind_weight + last_weight)
+    return calculate_yearly_averages(comp_reviews, first_timestamp, last_timestamp)
 
 
-def calculate_half_yearly_averages(comp_reviews, last_timestamp, first_timestamp):
+# calculates averages for a range of years
+def calculate_yearly_averages(comp_reviews, first_year, last_year):
     # create a list of half_years according to the smallest and largest timestamps
-    half_years = create_half_yearly_range(last_timestamp, first_timestamp)
+    years = list(range(first_year, last_year+1))
 
     timeseries = []
     # iterate over columns
@@ -163,51 +158,86 @@ def calculate_half_yearly_averages(comp_reviews, last_timestamp, first_timestamp
         # insert Name of column for understandability
         averages.append(col)
         # iterate over the half_years in the half years list
-        for half_year in half_years:
+        for year in years:
             # calculate moving average for the specific half year
-            average, weight = calculate_average(comp_reviews, col, half_year, weight, average)
+            average, weight = calculate_average(comp_reviews, col, year, weight, average)
             averages.append(average)
         timeseries.append(averages)
     # had to insert some bullshit name so that size of df matches the size of the half_years for column names
-    half_years.insert(0, "Category")
-    df = pd.DataFrame(timeseries, columns=half_years)
+    years.insert(0, "Category")
+    df = pd.DataFrame(timeseries, columns=years)
     return df
 
-
-def check_data_continuity(comp_reviews, last_timestamp, first_timestamp, continuity_required):
-    # make years to string to be comparable with years in Series, this is bullshit
-    comp_reviews["HalfYear"] = comp_reviews["HalfYear"].apply(lambda x: str(x))
-
-    year_range = int(last_timestamp) - int(first_timestamp) + 1
-    # iterate backwards over required years
-    for index in reversed(range(0, year_range)):
-        year = int(first_timestamp) + index
-        # if continuity is 0, we have reached enough continuous years and can return True
-        if continuity_required == 0:
-            return True
-        # if sample is still continuous, subract -1 from continuity counter
-        if year in comp_reviews["Year"].values:
-            continuity_required -= 1
+# returns the unique years of company entries and throws out Jahresabschlüsse that have the same year
+def get_entry_dates(comp_entries):
+    temp_entries = pd.DataFrame(columns=comp_entries.columns)
+    years = []
+    for index,row in comp_entries.iterrows():
+        #print(row.JA_von)
+        if isinstance(row.JA_von, str):
+            day, month, year = row.JA_von.split(".")
         else:
-            return False
+           continue
+        year = int(year)
+        if year in years:
+            continue
+        years.append(int(year))
+        temp_entries = temp_entries.append(row)
+    return years, temp_entries
 
-
-def handle_data(comp_reviews, continuity):
+# returns the EK-Quote Dataframe on a yearly basis
+def create_eqk_space(comp_entries):
     # split datum timestamp into the relevant properties
-    years, half_years = get_dates(comp_reviews["Datum"])
-    comp_reviews = comp_reviews.assign(HalfYear=half_years, Year=years)
-    comp_reviews = comp_reviews.drop('Datum', axis=1)
+    years, comp_entries = get_entry_dates(comp_entries)
+    comp_entries = comp_entries.assign(Year = years)
+    comp_entries = comp_entries[["Year", "EK-Quote"]]
+    comp_entries = comp_entries.sort_values('Year')
 
-    # extract first and last timestamps of Series
-    last_timestamp, first_timestamp = get_outter_timestamps(comp_reviews)
+    eqks = []
+    for year in years:
+        eqk = comp_entries["EK-Quote"].loc[comp_entries['Year'] == year].iloc[0]
+        eqks.append(eqk)
+    df = pd.DataFrame([eqks], columns=years)
+    df = df.reindex(sorted(df.columns), axis=1)
+    return df
 
-    # check if company reviews are continuous for the last X years, if continuity is wished for
-    if continuity != -1:
-        # if not continuous in regard to the requirement, return empty dataframe to signal ineligibility of company
-        if not check_data_continuity(comp_reviews, last_timestamp, first_timestamp, continuity):
-            return pd.DataFrame()
+# creates a datapoint based on an eligible year by forwarding the difference calculation for the reviews and calculating
+# the EKQ diff
+def create_datapoint(eligible_year, review_space, ekq_space, return_years, use_prior, calc_arg_reviews, calc_arg_entries):
+    # starts with calculation of review average differences
+    first_year = eligible_year - return_years+1
+    if use_prior:
+        first_year = eligible_year-return_years
 
-    return calculate_half_yearly_averages(comp_reviews, last_timestamp, first_timestamp)
+    review_years = list(range(first_year, eligible_year+1))
+    review_averages = review_space[review_years]
+
+    # forward review average difference caluclation to the correct method
+    if calc_arg_reviews == 'abs':
+        review_average_differences = review_averages
+    if calc_arg_reviews == 'prior':
+        review_average_differences = calculate_differences_to_prior(review_averages)
+    if calc_arg_reviews == 'first':
+        review_average_differences = calculate_differences_to_first(review_averages)
+
+
+    if use_prior:
+        review_average_differences = review_average_differences.drop(review_average_differences.columns[0], axis=1)
+
+    review_average_differences.insert(0, "Category", review_space["Category"])
+
+
+    #from now on, diff of ekq calculation
+
+    first_ekq = ekq_space[eligible_year]
+    second_ekq = ekq_space[eligible_year+1]
+
+    if calc_arg_entries == "abs":
+        ekq_diff = second_ekq-first_ekq
+    elif calc_arg_entries == "rel":
+        ekq_diff = (second_ekq-first_ekq)/first_ekq
+
+    return review_average_differences, ekq_diff
 
 
 def calculate_differences_to_first(df):
@@ -216,6 +246,7 @@ def calculate_differences_to_first(df):
     # for each score category
     for index, row in df.iterrows():
         new_elems = []
+        row = row.values
         # declare first elem, so that all other elements can subtract it
         first_elem = row[0]
         # if first_elem does not have an actual score, first elem should be 0 for calculation purposes
@@ -253,13 +284,13 @@ def calculate_differences_to_prior(df):
     new_df = pd.DataFrame(new_df_list, columns=df.columns)
     return new_df
 
-
+# currently unused
 def return_specified_years(df, return_years, calc_arg):
     # check if there are enough years to be displayed. If not, exit by returning empty dataframe
     if (df.columns.size - 1 < 2 * return_years):
         return pd.DataFrame()
 
-    # select the (2*return_years) last columns of the dataframe (each column is a half_year
+    # select the (2*return_years) last columns of the dataframe (each column is a half_year)
     df1 = df.iloc[:, -(2 * return_years):]
 
     # forward to the correct method
@@ -275,6 +306,112 @@ def return_specified_years(df, return_years, calc_arg):
     return df2
 
 
+# takes the timestamps and transforms them into years
+def get_review_dates(dates):
+
+    years = []
+    half_years = []
+    for date in dates:
+        year, month = date.split("-")[:2]
+        if int(month) in range(1, 7):
+            half_year = int(year)
+        else:
+            half_year = int(year) + 0.5
+
+        half_years.append(half_year)
+        years.append(int(year))
+    return years, half_years
+
+
+# get largest and smallest half years of the datasample
+def get_outter_timestamps(comp_reviews):
+
+    max_timestamp = comp_reviews["Year"].max()
+    min_timestamp = comp_reviews["Year"].min()
+
+    # we do not consider 2020, so reduce it to 2019
+    if max_timestamp >= 2020:
+        max_timestamp = 2019
+
+    if min_timestamp >= 2020:
+        min_timestamp = 2019
+
+    return max_timestamp, min_timestamp
+
+# currently unused
+def create_half_yearly_range(last_timestamp, first_timestamp):
+    # create a list of half years
+
+    stamp = first_timestamp
+    stamps = []
+
+    # insert first stamp to list already
+    stamps.append(stamp)
+    # increase timestamp by 0.5 in every iteration until it equals the last stamp
+    while stamp != last_timestamp:
+        stamp += 0.5
+        stamps.append(stamp)
+
+    return stamps
+
+
+# basic average calculation
+def calculate_average(comp_reviews, col, year, last_weight, last_avg):
+    # make all years to ints
+    comp_reviews["Year"] = comp_reviews["Year"].apply(lambda x: float(x))
+
+    # find values in the current ratings column where half_year is the currently looked at half_year
+    values = comp_reviews[col].loc[comp_reviews['Year'] == year]
+
+    values2 = []
+
+    # replace decimal seperator "," with "."
+    for value in values:
+        value2 = value
+        try:
+            value2 = float(value.replace(",", "."))
+        except:
+            pass
+        values2.append(value2)
+    values = pd.Series(values2)
+
+    #  calculate individual weight and average of this  year alone
+    ind_weight = values.size
+    ind_average = values.mean(skipna=True)
+
+    # if individual average is NaN
+    if not isinstance(ind_average, np.float64):
+        return last_avg, last_weight
+
+    # if this is the first year or the previous year still doesnt have an average
+    if last_avg == -1:
+        return ind_average, ind_weight
+    else:
+        # calculate the moving average of the current year, taking into account all previous years and weighing them
+        # according to their number of reviews
+        average = (ind_average * ind_weight + last_avg * last_weight) / (ind_weight + last_weight)
+        return average, (ind_weight + last_weight)
+
+
+# currently unused
+def check_data_continuity(comp_reviews, last_timestamp, first_timestamp, continuity_required):
+    # make years to string to be comparable with years in Series, this is bullshit
+    comp_reviews["HalfYear"] = comp_reviews["HalfYear"].apply(lambda x: str(x))
+
+    year_range = int(last_timestamp) - int(first_timestamp) + 1
+    # iterate backwards over required years
+    for index in reversed(range(0, year_range)):
+        year = int(first_timestamp) + index
+        # if continuity is 0, we have reached enough continuous years and can return True
+        if continuity_required == 0:
+            return True
+        # if sample is still continuous, subract -1 from continuity counter
+        if year in comp_reviews["Year"].values:
+            continuity_required -= 1
+        else:
+            return False
+
+
 # --------------------------------------------------------------#
 
 
@@ -284,74 +421,99 @@ Y = []
 print("Running script with continuity = " + str(continuity) + " and return_years = " + str(
     return_years) + ". Please wait.")
 
-# iterate companies
+# iterate companies via company attribute list (not eqk csv!)
 index = 0
-for company in company_list[:]:
+
+for company in company_attribute_list[:]:
+
     if (index % 100 == 0):
-        print(str(index) + "/" + str(len(company_list)))
-    index+=1
+        print(str(index) + "/" + str(len(company_attribute_list)))
+    index += 1
     # get parameters from attribute list
     old_name = company[0]
     n_employees = company[2]
     n_sales = company[3]
     insolvency = company[7]
-    if insolvency == -1 or insolvency == "":
-        continue
 
     # filter big companies, continue if company is too big
     if n_employees == "missing" and n_sales == "missing":
-        None
+        pass
     elif (n_employees == "missing" and float(n_sales.replace(",", "")) >= 40) or (
             n_sales == "missing" and int(n_employees.replace(",", "")) >= 250) or (
             n_employees != "missing" and n_sales != "missing" and float(n_sales.replace(",", "")) >= 40 and int(
         n_employees.replace(",", "")) >= 250):
+        #print("Unternehmen zu groß")
         continue
 
     # get all reviews where company name matches company
-    comp_reviews = df.loc[df['Unternehmen'] == old_name]
-
-    # print(old_name)
-    # print(len(comp_reviews))
+    comp_reviews = company_reviews.loc[company_reviews['Unternehmen'] == old_name]
 
     # check if company has enough reviews
     if len(comp_reviews) < min_reviews:
+        #print("Zu wenig Reviews")
         continue
 
-    # calculate moving averages and checking continuity requirement
-    result = handle_data(comp_reviews, continuity)
-    # if company does not contain the amount of continuous review years from last timestamp
-    if result.empty:
-        # print("continuity failed")
+    # get all Bundesanzeiger entries where company name matches company
+    comp_entries = company_bundesanzeiger_entries.loc[
+        company_bundesanzeiger_entries['Unternehmensname_given'] == old_name]
+
+    # check if company has any bundesanzeiger entries
+    if len(comp_entries) == 0:
+        #print("Keine Bundesanzeiger Einträge")
         continue
 
-    # take moving averages and calculate half_yearly differences
-    result2 = return_specified_years(result, return_years, calc_arg)
-    # if company does not contain return_years years
-    if result2.empty:
-        # print("return_years failed")
+
+
+
+    # calculate all yearly averages of a company
+    review_space = create_review_space(comp_reviews)
+    if review_space.empty:
         continue
-    # remove Category column, if True
-    if rem_category:
-        result2 = result2.drop("Category", axis=1)
-    columns = list(result2.columns)
-    x = result2.to_numpy(dtype=float)
-
-    #swap axis of array
-    x = np.swapaxes(x, 0,1)
-    y = insolvency
 
 
-    X.append(x)
-    Y.append(y)
+    # create list of all EQKs of a company
+    ekq_space = create_eqk_space(comp_entries)
+    if ekq_space.empty:
+        continue
 
-    Xnp = np.array(X)
-    Ynp = np.array(Y)
+    ### check which years are eligible to become a datapoint
+    # get a list of all years that contain reviews
+    review_years = get_all_review_years(comp_reviews)
+    # get a list of all years that contain bundesanzeiger entries
+    entry_years = get_all_entry_years(comp_entries)
 
+    eligible_years = get_eligible_years(review_years, entry_years, return_years, continuity, use_prior)
+    #print(review_years)
+    #print(entry_years)
+    #print(eligible_years)
+    # if list is empty
+    if not eligible_years:
+        continue
+
+
+    for eligible_year in eligible_years:
+        review,ekq = create_datapoint(eligible_year, review_space, ekq_space, return_years, use_prior, calc_arg_reviews, calc_arg_entries)
+
+        # remove Category column, if True
+        if rem_category:
+            review = review.drop("Category", axis=1)
+        columns = list(review.columns)
+        x = review.to_numpy(dtype=float)
+
+        # swap axis of array
+        x = np.swapaxes(x, 0, 1)
+        y = insolvency
+
+        X.append(x)
+        Y.append(y)
+
+Xnp = np.array(X)
+Ynp = np.array(Y)
 
 print(Xnp.shape)
 print(Ynp.shape)
 
 print("Done!")
-print("Your dataset contains " + str(Xnp.shape[0]) + " samples, of which " + str(np.count_nonzero(Ynp)) + " are bankrupt.")
+print("Your dataset contains " + str(Xnp.shape[0]) + " samples.")
 np.save('output/X.npy', Xnp, allow_pickle=True)
 np.save('output/Y.npy', Ynp, allow_pickle=True)

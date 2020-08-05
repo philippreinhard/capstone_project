@@ -12,9 +12,9 @@ np.set_printoptions(threshold=sys.maxsize)
 
 np.random.seed(6)
 
-X = np.load('Data Preparation\output\X_f.npy', allow_pickle=True)
-Y = np.load('Data Preparation\output\Y_f.npy', allow_pickle=True)
-print(X[0])
+X = np.load('Data Preparation\output\X.npy', allow_pickle=True)
+Y = np.load('Data Preparation\output\Y.npy', allow_pickle=True)
+
 
 X = X.astype('float64')
 Y = Y.astype('float64')

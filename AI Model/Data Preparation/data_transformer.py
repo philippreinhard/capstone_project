@@ -29,7 +29,7 @@ for company in company_attribute_list:
 company_attribute_list = company_list_unique
 # print(insolvencies)
 
-company_reviews = pd.read_csv(data_path + "reviews_merged_clean.csv")
+company_reviews = pd.read_csv(data_path + "reviews_merged_clean_05_08_2020.csv")
 company_reviews.head()
 company_reviews = company_reviews[
     ["Unternehmen", "Datum", "ReviewRating", "Arbeitsatmosphäre_s", "Image_s", "Work-Life-Balance_s",
@@ -502,8 +502,9 @@ for company in company_attribute_list[:]:
 
         # swap axis of array
         x = np.swapaxes(x, 0, 1)
-        y = insolvency
-
+        y = ekq
+        print(x)
+        print(y)
         X.append(x)
         Y.append(y)
 

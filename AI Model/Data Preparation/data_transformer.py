@@ -229,8 +229,8 @@ def create_datapoint(eligible_year, review_space, ekq_space, return_years, use_p
 
     #from now on, diff of ekq calculation
 
-    first_ekq = ekq_space[eligible_year]
-    second_ekq = ekq_space[eligible_year+1]
+    first_ekq = ekq_space[eligible_year][0]
+    second_ekq = ekq_space[eligible_year+1][0]
 
     if calc_arg_entries == "abs":
         ekq_diff = second_ekq-first_ekq
@@ -267,7 +267,7 @@ def calculate_differences_to_prior(df):
     # for each score category
     for i, row in df.iterrows():
         new_elems = []
-        # first element is the prior to itself TODO: check if the actual prior can be taken, and use that instead
+        # first element is the prior to itself
         prior_elem = row[0]
 
         # for each value in a rating row, calculate difference between element and prior element
@@ -494,6 +494,8 @@ for company in company_attribute_list[:]:
     for eligible_year in eligible_years:
         review,ekq = create_datapoint(eligible_year, review_space, ekq_space, return_years, use_prior, calc_arg_reviews, calc_arg_entries)
 
+        if np.isnan(ekq):
+            continue
         # remove Category column, if True
         if rem_category:
             review = review.drop("Category", axis=1)
@@ -503,8 +505,7 @@ for company in company_attribute_list[:]:
         # swap axis of array
         x = np.swapaxes(x, 0, 1)
         y = ekq
-        print(x)
-        print(y)
+
         X.append(x)
         Y.append(y)
 

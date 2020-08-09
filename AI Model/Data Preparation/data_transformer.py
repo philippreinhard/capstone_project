@@ -379,6 +379,7 @@ def calculate_average(comp_reviews, col, year, last_weight, last_avg):
     ind_weight = values.size
     ind_average = values.mean(skipna=True)
 
+
     # if individual average is NaN
     if np.isnan(ind_average):
         return last_avg, last_weight

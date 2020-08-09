@@ -146,7 +146,7 @@ def calculate_yearly_averages(comp_reviews, first_year, last_year):
     years = list(range(first_year, last_year+1))
 
     timeseries = []
-    # iterate over columns
+    # iterate over columns (col is the name of each column)
     for col in comp_reviews.drop(["Unternehmen", "Year", "HalfYear"], axis=1).columns:
         # initialize average and weight, weight is used to kep track of the number of reviews throughout the years,
         # is needed for moving average
@@ -357,7 +357,7 @@ def create_half_yearly_range(last_timestamp, first_timestamp):
 
 # basic average calculation
 def calculate_average(comp_reviews, col, year, last_weight, last_avg):
-    # make all years to ints
+    # make all years to floats
     comp_reviews["Year"] = comp_reviews["Year"].apply(lambda x: float(x))
 
     # find values in the current ratings column where half_year is the currently looked at half_year
@@ -380,7 +380,7 @@ def calculate_average(comp_reviews, col, year, last_weight, last_avg):
     ind_average = values.mean(skipna=True)
 
     # if individual average is NaN
-    if not isinstance(ind_average, np.float64):
+    if np.isnan(ind_average):
         return last_avg, last_weight
 
     # if this is the first year or the previous year still doesnt have an average

@@ -15,6 +15,8 @@ np.random.seed(6)
 X = np.load('Data Preparation\output\X.npy', allow_pickle=True)
 Y = np.load('Data Preparation\output\Y.npy', allow_pickle=True)
 
+print(X[0])
+print(Y)
 
 X = X.astype('float64')
 Y = Y.astype('float64')

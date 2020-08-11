@@ -407,7 +407,7 @@ def check_data_continuity(comp_reviews, last_timestamp, first_timestamp, continu
 ### DO NOT CHANGE THESE PARAMETERS ###
 continuity = False
 use_prior = True
-
+observed_years = observed_years-1
 # EXPLANATION: use_prior used to decide whether to use the year before the first year in our 3-year review window as an
 # anchorpoint for our difference calculation. This is not required anymore because observed_years is now interpreted
 # differently. continuity is not required checked for anymore.

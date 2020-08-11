@@ -98,12 +98,12 @@ for root, dirs, files in os.walk('scraped_data'):
     document_list.extend(files)
     break
 
-# document_list = ['BAB DATA-Systems Vertriebs GmbH_29.01.2018.html']
+document_list = ['Rohe GmbH  Co. KG_22.01.2020.html']
 # with open('output/test.csv', newline='', encoding='utf8') as f:
 #     reader = csv.reader(f)
 #     document_list = [item for sublist in reader for item in sublist]
-# debug_prints = True
-debug_prints = False
+debug_prints = True
+# debug_prints = False
 
 abort_execution = False
 skip_item = False
@@ -124,6 +124,10 @@ re_Jahresfehlbetrag_not_Jahresueberschuss = re.compile(r'^(?!.*Jahresüberschuss
 re_Bilanzverlust = re.compile(r'^(?!.*Bilanzgewinn.*).*Bilanzverlust.*$', re.IGNORECASE)
 re_eigeneAnteile = re.compile(r'eigene[\s\S]*Anteile', re.IGNORECASE)
 re_Umsatzerlos = re.compile('Umsatzerlös', re.IGNORECASE)
+re_Kommanditkapital = re.compile(r'^(?!.*eingefordert.*).*Kommanditkapital.*$', re.IGNORECASE)
+re_buchmaessigesEK = re.compile(r'buchmäßiges[\s\S]*Eigenkapital', re.IGNORECASE)
+re_SummeEK = re.compile(r'Summe[\s\S]*Eigenkapital', re.IGNORECASE)
+re_Verbindlichkeiten = re.compile(r'Verbindlichkeiten', re.IGNORECASE)
 
 current_locale = 'de_DE'
 employee_desc = ['Arbeitnehmer', 'Mitarbeiter']
@@ -161,6 +165,7 @@ for item in document_list:
         unternehmensname_infile = ''
         dokumententyp = ''
         JA_von = ''
+        ek_td = ''
         JA_bis = ''
         datum = ''
         anzahl_MA = ''
@@ -169,6 +174,7 @@ for item in document_list:
         bilanzpassiva = ''
         bilanzsumme = ''
         bilanzsumme_vorjahr = ''
+        break_out = False
         guv = ''
         nicht_gedeckter_fehlbetrag = ''
 
@@ -401,7 +407,7 @@ for item in document_list:
                         if debug_prints:
                             print(item, 're found Fehlbetrag')
 
-                if ek_td is None:  # find tds that have a <b> in them that has the "EK" inside
+                if ek_td is None:  # find tds that have a <b> (or any other element) in them that has the "EK" inside
                     ek_tds = bilanz[0].parent.find_all('td')
                     for temp_var in ek_tds:
                         if temp_var.find(string=re_Eigenkapital):
@@ -457,7 +463,7 @@ for item in document_list:
                                     print("found an tr:", " ".join(elem.text.split()))
                                 ek_tds = elem.find_all('td')
                                 ek_td0 = ek_tds[0].get_text().strip()
-                                if ek_td0.startswith(('B.', 'C.', 'D.') or re_Rueckstellungen.search(ek_td0)):
+                                if ek_td0.startswith(('B.', 'C.', 'D.') or re_Rueckstellungen.search(ek_td0) or re_Verbindlichkeiten.search(ek_td0)):
                                     break
                                 else:  # if ek_td0.startswith(('I.', 'II.', 'III.', 'IV.', 'V.')) or re.search(r'nicht[\s\S]*gedeckter[\s\S]*Fehlbetrag', ek_td0, re.IGNORECASE):
                                     if debug_prints:
@@ -477,7 +483,15 @@ for item in document_list:
                                         for elem2 in ek_tds[0].next_siblings:
                                             if not (elem2 and isinstance(elem2, NavigableString)):
                                                 if elem2.text.strip() != "":
-                                                    if (any(x in ek_td0 for x in skipping_values) or re_eingefordertesKapital.search(ek_td0)) and not re_davonnichtgedeckt.search(ek_td0):
+                                                    if re_buchmaessigesEK.search(ek_td0) or re_SummeEK.search(ek_td0):
+                                                        ek_zwischensumme = []
+                                                        eigenkapital = get_sanitized_number(elem2.text.strip().splitlines()[0])
+                                                        break_out = True
+                                                        break
+                                                    elif (any(x in ek_td0 for x in skipping_values) or
+                                                        re_eingefordertesKapital.search(ek_td0) or
+                                                        re_Kommanditkapital.search(ek_td0)) and \
+                                                            not re_davonnichtgedeckt.search(ek_td0):
                                                         pass
                                                     elif (re_nichtgedeckterFehlbetrag.search(ek_td0) or
                                                           re_Fehlbetrag.search(ek_td0) or
@@ -501,19 +515,22 @@ for item in document_list:
                                                         ek_zwischensumme.append(elem2.text.strip().splitlines()[0])
                                                         if ek_secondlevel: ek_secondlevel_has_data = True
                                                     break
+                                        if break_out:
+                                            break
 
 
                         if debug_prints:
                             print('EK_zwischensumme:', ek_zwischensumme)
-                        for elem in ek_zwischensumme:
-                            if elem.strip() != '':
-                                try:
-                                    temp_var = get_sanitized_number(elem)
-                                    eigenkapital = eigenkapital + temp_var
-                                except Exception as e:
-                                    if debug_prints:
-                                        print(item, 'error adding ek_zwischensumme!', repr(e))
-                        eigenkapital = round(eigenkapital, 2)
+                        if ek_zwischensumme:
+                            for elem in ek_zwischensumme:
+                                if elem.strip() != '':
+                                    try:
+                                        temp_var = get_sanitized_number(elem)
+                                        eigenkapital = eigenkapital + temp_var
+                                    except Exception as e:
+                                        if debug_prints:
+                                            print(item, 'error adding ek_zwischensumme!', repr(e))
+                            eigenkapital = round(eigenkapital, 2)
 
                     # Nicht gedeckter Fehlbetrag II:
 
@@ -537,7 +554,7 @@ for item in document_list:
                                                 temp_var = get_sanitized_number(elem2.text.strip().splitlines()[0].strip())
                                             except Exception as e:
                                                 if debug_prints:
-                                                    print('error converting nicht_gedeckter_fehlbetrag', nicht_gedeckter_fehlbetrag)
+                                                    print('error converting nicht_gedeckter_fehlbetrag:', elem2.text.strip().splitlines()[0].strip())
                                             try:
                                                 if temp_var > get_sanitized_number(nicht_gedeckter_fehlbetrag):
                                                     nicht_gedeckter_fehlbetrag = temp_var
@@ -556,12 +573,12 @@ for item in document_list:
                             nicht_gedeckter_fehlbetrag = get_sanitized_number(nicht_gedeckter_fehlbetrag)
                     except Exception as e:
                         if debug_prints:
-                            print(item, 'error converting nicht_gedeckter_fehlbetrag', nicht_gedeckter_fehlbetrag)
+                            print(item, 'error finally converting nicht_gedeckter_fehlbetrag,', '"'+str(nicht_gedeckter_fehlbetrag)+'"')
 
                     try:
                         if nicht_gedeckter_fehlbetrag * (-1.0) == eigenkapital:
                             eigenkapital = 0
-                        if nicht_gedeckter_fehlbetrag > 0 and eigenkapital < 0:
+                        if nicht_gedeckter_fehlbetrag > 0:
                             eigenkapital = 0
                     except Exception as e:
                         pass
@@ -578,7 +595,9 @@ for item in document_list:
                         if not nicht_gedeckter_fehlbetrag:
                             eigenkapitalquote = float(eigenkapital) / float(bilanzsumme)
                         else:
-                            eigenkapitalquote = (-1.0) * (float(nicht_gedeckter_fehlbetrag) / float(bilanzsumme))
+                            eigenkapitalquote = float(nicht_gedeckter_fehlbetrag) / float(bilanzsumme)
+                            if eigenkapitalquote > 0:
+                                eigenkapitalquote = eigenkapitalquote * (-1.0)
                     except Exception as e:
                         if debug_prints:
                             print(item, 'error calculating eigenkapitalquote', repr(e))
@@ -658,8 +677,8 @@ for item in document_list:
 
             temporary_list = [item, unternehmensname_given, ort_given, unternehmensname_infile, ort_infile, datum,
                               dokumententyp, JA_von, JA_bis,
-                              anzahl_MA, eigenkapital, bilanzsumme, bilanzgewinn, eigenkapitalquote, nicht_gedeckter_fehlbetrag, umsatz, bilanzaktiva,
-                              bilanzpassiva]
+                              anzahl_MA, eigenkapital, bilanzsumme, bilanzgewinn, eigenkapitalquote, nicht_gedeckter_fehlbetrag, umsatz, '#N/A in this version',
+                              '#N/A in this version']
 
             company_data.loc[len(company_data)] = temporary_list
             export_counter = export_counter + 1
@@ -698,8 +717,8 @@ for item in document_list:
         break
 
 try:
-    company_data.to_csv('output/company_attributes.csv', index=False, encoding='utf-8', sep=';',
-                        quoting=csv.QUOTE_ALL)
+    # company_data.to_csv('output/company_attributes.csv', index=False, encoding='utf-8', sep=';', quoting=csv.QUOTE_ALL)
+    company_data.to_csv('output/company_attributes2.csv', index=False, encoding='utf-8', sep=';' , quoting=csv.QUOTE_ALL)
 except PermissionError as e:
     print("could not export file because of PermissionError, please try again!!")
 print("Done!")

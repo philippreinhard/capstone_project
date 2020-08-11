@@ -14,16 +14,14 @@ print("Initializing...")
 with open(data_path + 'new_company_attributes_merged.json', 'r') as file:
     company_attribute_list = json.load(file)
 
-company_bundesanzeiger_entries = pd.read_csv(data_path + 'company_attributes_eqk.csv', sep=";")
+company_bundesanzeiger_entries = pd.read_csv(data_path + 'company_attributes_05_08_2020.csv', sep=";")
 
 # remove duplicates in company_list
 insolvencies = 0
 company_list_unique = []
 for company in company_attribute_list:
-    if company[7] == int(1):
-        insolvencies += 1
     if company in company_list_unique:
-        continue;
+        continue
     else:
         company_list_unique.append(company)
 company_attribute_list = company_list_unique
@@ -42,18 +40,14 @@ company_reviews = company_reviews[
 # minimum amount of reviews per company
 min_reviews = 5
 
-# amount of years to be returned, counting from year of most recent review. This will obviously return twice as
-# many half_years. This is required so that the samples for the AI model have constant length.
-# Beware: return_years should not be bigger than continuity, if you wish to ensure continuity in the samples
-return_years = 3
+# amount of years to be observed.  This is required so that the samples for the AI model have constant length.
+# By specifying observed_years = n, the script will return n-1 differences between the years.
+observed_years = 4
 
-# choose how many continuous years of at least 1 review per year the samples require
-# To avoid the continuity check, set continuity to False
-continuity = False
 
-# calc_arg_reviews specifies the resulting calculation of the differneces that is returned in the output file.
-# 'prior': calculates the differences of the moving average score to the score the half_year before
-# 'first': calculates the differences of the moving average score to the first considered half_year score
+# calc_arg_reviews specifies the resulting calculation of the differences that is returned in the output file.
+# 'prior': calculates the differences of the moving average score to the score the year before
+# 'first': calculates the differences of the moving average score to the first considered year score
 #  'abs' : returns not the difference between moving average scores, but the scores themselves
 calc_arg_reviews = 'first'
 
@@ -66,11 +60,6 @@ calc_arg_entries = 'abs'
 # Arbeitsatmosphäre etc. If you chose False, you will have to remove them manually later on. This has no effect on the
 # calculations
 rem_category = True
-
-# this boolean decides wether to use the year before the first year in our 3-year review window as an anchorpoint
-# for our difference calculation. If this is set to False, the first year will always contain 0s only, because there is
-# no difference between the first year and the anchor year (which is the first year).
-use_prior = True
 
 
 # ------------------ METHOD DECLARATION ------------------------#
@@ -94,10 +83,10 @@ def get_all_entry_years(comp_entries):
     return [int(i) for i in sorted(years)]
 
 # figures out the years that are eligible to become a datapoint
-def get_eligible_years(review_years, entry_years, return_years, continuity, use_prior):
+def get_eligible_years(review_years, entry_years, observed_years, continuity, use_prior):
     possible_years = []
     if use_prior:
-        return_years+=1
+        observed_years+=1
 
 
     for entry_year in entry_years:
@@ -110,7 +99,7 @@ def get_eligible_years(review_years, entry_years, return_years, continuity, use_
         # check if continuity is required throughout years
         if continuity:
 
-            for i in range(0, return_years):
+            for i in range(0, observed_years):
                 if (entry_year - i in review_years):
                     pass
                 else:
@@ -121,7 +110,7 @@ def get_eligible_years(review_years, entry_years, return_years, continuity, use_
 
         ## else, if continuity is not required, just check for minimum year
         else:
-            if min(review_years) <= entry_year - return_years+1 and entry_year in review_years:
+            if min(review_years) <= entry_year - observed_years+1 and entry_year in review_years:
                 possible_years.append(entry_year)
 
     return possible_years
@@ -203,11 +192,11 @@ def create_eqk_space(comp_entries):
 
 # creates a datapoint based on an eligible year by forwarding the difference calculation for the reviews and calculating
 # the EKQ diff
-def create_datapoint(eligible_year, review_space, ekq_space, return_years, use_prior, calc_arg_reviews, calc_arg_entries):
+def create_datapoint(eligible_year, review_space, ekq_space, observed_years, use_prior, calc_arg_reviews, calc_arg_entries):
     # starts with calculation of review average differences
-    first_year = eligible_year - return_years+1
+    first_year = eligible_year - observed_years + 1
     if use_prior:
-        first_year = eligible_year-return_years
+        first_year = eligible_year - observed_years
 
     review_years = list(range(first_year, eligible_year+1))
     review_averages = review_space[review_years]
@@ -285,13 +274,13 @@ def calculate_differences_to_prior(df):
     return new_df
 
 # currently unused
-def return_specified_years(df, return_years, calc_arg):
+def return_specified_years(df, observed_years, calc_arg):
     # check if there are enough years to be displayed. If not, exit by returning empty dataframe
-    if (df.columns.size - 1 < 2 * return_years):
+    if (df.columns.size - 1 < 2 * observed_years):
         return pd.DataFrame()
 
-    # select the (2*return_years) last columns of the dataframe (each column is a half_year)
-    df1 = df.iloc[:, -(2 * return_years):]
+    # select the observed_years last columns of the dataframe (each column is a half_year)
+    df1 = df.iloc[:, -(2 * observed_years):]
 
     # forward to the correct method
     if calc_arg == 'abs':
@@ -415,12 +404,19 @@ def check_data_continuity(comp_reviews, last_timestamp, first_timestamp, continu
 
 # --------------------------------------------------------------#
 
+### DO NOT CHANGE THESE PARAMETERS ###
+continuity = False
+use_prior = True
+observed_years = observed_years-1
+# EXPLANATION: use_prior used to decide whether to use the year before the first year in our 3-year review window as an
+# anchorpoint for our difference calculation. This is not required anymore because observed_years is now interpreted
+# differently. continuity is not required checked for anymore.
 
 # list for final data entries [X,y]
 X = []
 Y = []
-print("Running script with continuity = " + str(continuity) + " and return_years = " + str(
-    return_years) + ". Please wait.")
+print("Running script with observed_years = " + str(
+    observed_years) + " This will return "+str(observed_years-1)+" differences. Please wait.")
 
 # iterate companies via company attribute list (not eqk csv!)
 index = 0
@@ -483,7 +479,7 @@ for company in company_attribute_list[:]:
     # get a list of all years that contain bundesanzeiger entries
     entry_years = get_all_entry_years(comp_entries)
 
-    eligible_years = get_eligible_years(review_years, entry_years, return_years, continuity, use_prior)
+    eligible_years = get_eligible_years(review_years, entry_years, observed_years, continuity, use_prior)
     #print(review_years)
     #print(entry_years)
     #print(eligible_years)
@@ -493,7 +489,7 @@ for company in company_attribute_list[:]:
 
 
     for eligible_year in eligible_years:
-        review,ekq = create_datapoint(eligible_year, review_space, ekq_space, return_years, use_prior, calc_arg_reviews, calc_arg_entries)
+        review,ekq = create_datapoint(eligible_year, review_space, ekq_space, observed_years, use_prior, calc_arg_reviews, calc_arg_entries)
 
         if np.isnan(ekq):
             continue

@@ -1,20 +1,33 @@
 ########################################################################################################################
 # Use this script to bin and export the new y and additionally export the corresponding label dictionary
 # ATTENTION: Use y_transformer_visualized.py to find the perfect class edges by creating different distributions
+import json
 import numpy as np
 
-Y = np.load('output\Y.npy', allow_pickle=True)
+# define the filename
+filename = 'Y_10_4_abs_abs'
+
+y_path = 'output/' + filename + '.npy'
+Y = np.load(y_path, allow_pickle=True)
 Y = Y.astype('float64')
 
 # Input from y_transformer_visualized.py:
-bin_def = [-np.inf, -0.15, -0.05, 0, 0.05, 0.15, +np.inf]
+bin_def_6 = [-np.inf, -0.15, -0.05, 0, 0.05, 0.15, +np.inf]
+bin_def_5 = [-np.inf, -0.10, -0.02, 0.02, 0.10, +np.inf]
+bin_def_3 = [-np.inf, -0.05, 0.05, +np.inf]
 
+bin_defs = [bin_def_3, bin_def_5, bin_def_6]
 
 def binning_y(bins_definition):
     # Initialize bins
     bin_indices = np.digitize(Y, bins_definition)
     # print(bin_indices)
-    return bin_indices
+    i=0
+    bins = []
+    while i < len(bin_indices):
+        bins.append(bin_indices[i]-1)
+        i += 1
+    return bins
 
 
 def produce_label_dic(calculated_edges):
@@ -24,28 +37,35 @@ def produce_label_dic(calculated_edges):
         label = str('' + str(round(calculated_edges[z - 1], 2)) + ' -> ' + str(round(calculated_edges[z], 2)))
         z += 1
         edges_labels.append(label)
-    #print(edges_labels)
+    # print(edges_labels)
     label_dic = {}
     i = 0
     while i < len(edges_labels):
         label_dic.update({i: edges_labels[i]})
         i += 1
-    #print(label_dic)
+    # print(label_dic)
     return label_dic
 
 
-Y_new = np.array(binning_y(bin_def), dtype=int)
-Y_label_dic = produce_label_dic(bin_def)
+for defs in bin_defs:
+    Y_new = np.array(binning_y(defs), dtype=int)
+    Y_label_dic = produce_label_dic(defs)
+    print(Y_new)
 
+    # Export numpy and dictionary
+    number_of_classes = len(defs)-1
+    y_path_categorized = 'output_categorized/' + filename + '_(' + str(number_of_classes) + ').npy'
+    np.save(y_path_categorized, Y_new, allow_pickle=True)
 
-# Export numpy and dictionary
-# np.save('output/Y_new.npy', Y_new, allow_pickle=True)
-#a_file = open("data.json", "w")
-#json.dump(Y_label_dic, a_file)
-#a_file.close()
+'''
+dic_path = 'output_categorized/y_dic_('+ str(number_of_classes) + ').json'
+a_file = open(dic_path, "w")
+json.dump(Y_label_dic, a_file)
+a_file.close()
 
 # How to load dictionary
-#a_file = open("data.json", "r")
-#output = a_file.read()
-#print(output)
-#a_file.close()
+a_file = open(dic_path, "r")
+output = a_file.read()
+print(output)
+a_file.close()
+'''

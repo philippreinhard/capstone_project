@@ -6,8 +6,11 @@ import sys
 # Use this script to find the perfect class edges by creating different distributions
 # ATTENTION: Use the y_transformer.py to bin your data and export a new numpy array Y
 
+# define the filename
+filename = 'Y_10_3_abs_abs'
 
-Y = np.load('output\Y.npy', allow_pickle=True)
+y_path = 'output/' + filename + '.npy'
+Y = np.load(y_path, allow_pickle=True)
 Y = Y.astype('float64')
 # print(Y)
 
@@ -21,6 +24,7 @@ Y = Y.astype('float64')
 # bins = [-np.inf, -0.40, -0.20, -0.10, -0.05, 0, 0.05, 0.10, 0.20, 0.40, + np.inf]
 bins_2 = [-np.inf, 0, +np.inf]
 bins_4 = [-np.inf, -0.10, 0, 0.10, +np.inf]
+bins_5 = [-np.inf, -0.10, -0.02, 0.02, 0.10, +np.inf]
 bins_6 = [-np.inf, -0.15, -0.05, 0, 0.05, 0.15, +np.inf]
 bins_8 = [-np.inf, -0.20, -0.10, -0.05, 0, 0.05, 0.10, 0.20, +np.inf]
 
@@ -32,6 +36,7 @@ bins_8 = [-np.inf, -0.20, -0.10, -0.05, 0, 0.05, 0.10, 0.20, +np.inf]
 # For 10 classes: labels = ['insolvency' ,'escalating', 'high risk', 'medium risk', 'low risk', 'no risk', 'positive', 'high positive', 'extreme positive', 'rocking']
 labels_2 = ['risk\n(... -> 0)', 'no risk\n(0 -> ...)']
 labels_4 = ['high risk\n(...-> -0.10)', 'low risk\n(-0.10 -> 0)', 'no risk\n(0 -> 0.10)', 'positive\n(0.10 -> ...)']
+labels_5 = ['high risk\n(...-> -0.10)', 'low risk\n(-0.10 -> -0.02', 'no risk\n(-0.02 -> 0.02)', 'positive\n(0.02 -> 0.10)', 'positive\n(0.10 -> ...)']
 labels_6 = ['high risk\n(...-> -0.15)', 'medium risk\n(-0.15 -> -0,05)', 'low risk\n(-0.05 -> 0)',
             'no risk\n(0 -> 0.05)', 'positive\n(0.05 -> 0.15)', 'extremly positive\n(0.15 -> ...)']
 labels_8 = ['escalating\n(...-> -0.20)', 'high risk\n(-0.20 -> -0.10)', 'medium risk\n(-0.10 -> -0.05)',
@@ -84,11 +89,13 @@ def plot_bin_counts(bin_dic):
 
 counts_bins_2 = calculate_bins_size(binning_y(bins_2), labels_2)
 counts_bins_4 = calculate_bins_size(binning_y(bins_4), labels_4)
+counts_bins_5 = calculate_bins_size(binning_y(bins_5), labels_5)
 counts_bins_6 = calculate_bins_size(binning_y(bins_6), labels_6)
 counts_bins_8 = calculate_bins_size(binning_y(bins_8), labels_8)
 # counts_bins_10 = calculate_bins_size(binning_y(bins_10), labels_10)
 plot_bin_counts(counts_bins_2)
 plot_bin_counts(counts_bins_4)
+plot_bin_counts(counts_bins_5)
 plot_bin_counts(counts_bins_6)
 plot_bin_counts(counts_bins_8)
 # plot_bin_counts(counts_bins_10)

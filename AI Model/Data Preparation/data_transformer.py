@@ -14,7 +14,7 @@ print("Initializing...")
 with open(data_path + 'new_company_attributes_merged.json', 'r') as file:
     company_attribute_list = json.load(file)
 
-company_bundesanzeiger_entries = pd.read_csv(data_path + 'company_attributes_05_08_2020.csv', sep=";")
+company_bundesanzeiger_entries = pd.read_csv(data_path + 'company_attributes_12_08_2020.csv', sep=";")
 
 # remove duplicates in company_list
 insolvencies = 0
@@ -37,19 +37,19 @@ company_reviews = company_reviews[
 
 # ------------------------ PARAMETERS ------------------------------#
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!PLEASE CHANGE AND PLAY WITH THESE PARAMETERS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-# minimum amount of reviews per company
-min_reviews = 5
+# minimum amount of reviews per company (standard = 5)
+min_reviews = 10
 
 # amount of years to be observed.  This is required so that the samples for the AI model have constant length.
 # By specifying observed_years = n, the script will return n-1 differences between the years.
-observed_years = 4
+observed_years = 5
 
 
 # calc_arg_reviews specifies the resulting calculation of the differences that is returned in the output file.
 # 'prior': calculates the differences of the moving average score to the score the year before
 # 'first': calculates the differences of the moving average score to the first considered year score
 #  'abs' : returns not the difference between moving average scores, but the scores themselves
-calc_arg_reviews = 'first'
+calc_arg_reviews = 'abs'
 
 #  calc_arg_entries specifies the resulting calculation of the EK-Quote in the output file.
 # 'abs': calculates the difference in "Prozentpunkten" between the EKQ of two years
@@ -514,5 +514,13 @@ print(Ynp.shape)
 
 print("Done!")
 print("Your dataset contains " + str(Xnp.shape[0]) + " samples.")
-np.save('output/X.npy', Xnp, allow_pickle=True)
-np.save('output/Y.npy', Ynp, allow_pickle=True)
+X_path = 'output/X_' + str(min_reviews) + '_' + str(observed_years) + '_' + calc_arg_reviews + '_' + calc_arg_entries
+Y_path = 'output/Y_' + str(min_reviews) + '_' + str(observed_years) + '_' + calc_arg_reviews + '_' + calc_arg_entries
+print(Y_path)
+# Naming: X_<min_reviews>_<observed_years>_<calc_arg_reviews>_<calc_arg_entries>
+# Hint: Observed years = Number of differences
+np.save(X_path, Xnp, allow_pickle=True)
+np.save(Y_path, Ynp, allow_pickle=True)
+
+#np.save('output/X_.npy', Xnp, allow_pickle=True)
+#np.save('output/Y.npy', Ynp, allow_pickle=True)

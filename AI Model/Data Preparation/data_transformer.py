@@ -181,11 +181,10 @@ def create_datapoint(eligible_year, review_space, ekq_space, observed_years, cal
         review_average_differences = review_averages
     if calc_arg_reviews == 'prior':
         review_average_differences = calculate_differences_to_prior(review_averages)
-        review_average_differences = review_average_differences.drop(review_average_differences.columns[0], axis=1)
     if calc_arg_reviews == 'first':
         review_average_differences = calculate_differences_to_first(review_averages)
-        review_average_differences = review_average_differences.drop(review_average_differences.columns[0], axis=1)
 
+    review_average_differences = review_average_differences.drop(review_average_differences.columns[0], axis=1)
     review_average_differences.insert(0, "Category", review_space["Category"])
 
 

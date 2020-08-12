@@ -1,9 +1,7 @@
 import json
 import numpy as np
 import pandas as pd
-import math
-from sys import *
-import os
+import itertools
 
 data_path = "model_data/"
 pd.set_option('display.width', 100)
@@ -38,30 +36,23 @@ company_reviews = company_reviews[
 # ------------------------ PARAMETERS ------------------------------#
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!PLEASE CHANGE AND PLAY WITH THESE PARAMETERS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # minimum amount of reviews per company (standard = 5)
-min_reviews = 10
+# min_reviews = 10
 
 # amount of years to be observed.  This is required so that the samples for the AI model have constant length.
 # By specifying observed_years = n, the script will return n-1 differences between the years.
-observed_years = 5
+# observed_years = 5
 
 
 # calc_arg_reviews specifies the resulting calculation of the differences that is returned in the output file.
 # 'prior': calculates the differences of the moving average score to the score the year before
 # 'first': calculates the differences of the moving average score to the first considered year score
 #  'abs' : returns not the difference between moving average scores, but the scores themselves
-calc_arg_reviews = 'prior'
+# calc_arg_reviews = 'prior'
 
 #  calc_arg_entries specifies the resulting calculation of the EK-Quote in the output file.
 # 'abs': calculates the difference in "Prozentpunkten" between the EKQ of two years
 # 'rel': calculates the percental difference between the EKQ of two years. Please note the difference to "abs".
-calc_arg_entries = 'abs'
-
-# this boolean decides whether to drop the "Category" column in the ouput, which contains the names of the individual scores, like
-# Arbeitsatmosphäre etc. If you chose False, you will have to remove them manually later on. This has no effect on the
-# calculations
-rem_category = True
-
-continuity = False
+# calc_arg_entries = 'abs'
 
 
 # ------------------ METHOD DECLARATION ------------------------#
@@ -85,7 +76,7 @@ def get_all_entry_years(comp_entries):
     return [int(i) for i in sorted(years)]
 
 # figures out the years that are eligible to become a datapoint
-def get_eligible_years(review_years, entry_years, observed_years, continuity, use_prior):
+def get_eligible_years(review_years, entry_years, observed_years):
     possible_years = []
 
     for entry_year in entry_years:
@@ -95,22 +86,8 @@ def get_eligible_years(review_years, entry_years, observed_years, continuity, us
         if not entry_year + 1 in entry_years:
             continue
 
-        # check if continuity is required throughout years
-        if continuity:
-
-            for i in range(0, observed_years-1):
-                if (entry_year - i in review_years):
-                    pass
-                else:
-                    do_append = False
-                    break
-            if do_append:
-                possible_years.append(entry_year)
-
-        ## else, if continuity is not required, just check for minimum year
-        else:
-            if min(review_years) <= entry_year - observed_years and entry_year in review_years:
-                possible_years.append(entry_year)
+        if min(review_years) <= entry_year - observed_years and entry_year in review_years:
+            possible_years.append(entry_year)
 
     return possible_years
 
@@ -191,7 +168,7 @@ def create_eqk_space(comp_entries):
 
 # creates a datapoint based on an eligible year by forwarding the difference calculation for the reviews and calculating
 # the EKQ diff
-def create_datapoint(eligible_year, review_space, ekq_space, observed_years, use_prior, calc_arg_reviews, calc_arg_entries):
+def create_datapoint(eligible_year, review_space, ekq_space, observed_years, calc_arg_reviews, calc_arg_entries):
     # starts with calculation of review average differences
 
     first_year = eligible_year - observed_years
@@ -382,7 +359,7 @@ def calculate_average(comp_reviews, col, year, last_weight, last_avg):
         return average, (ind_weight + last_weight)
 
 
-# currently unused
+# CURRENTLY UNUSED
 def check_data_continuity(comp_reviews, last_timestamp, first_timestamp, continuity_required):
     # make years to string to be comparable with years in Series, this is bullshit
     comp_reviews["HalfYear"] = comp_reviews["HalfYear"].apply(lambda x: str(x))
@@ -403,122 +380,145 @@ def check_data_continuity(comp_reviews, last_timestamp, first_timestamp, continu
 
 # --------------------------------------------------------------#
 
-### DO NOT CHANGE THESE PARAMETERS ###
-use_prior = True
-observed_years = observed_years-1
-# EXPLANATION: use_prior used to decide whether to use the year before the first year in our 3-year review window as an
-# anchorpoint for our difference calculation. This is not required anymore because observed_years is now interpreted
-# differently. continuity is not checked for anymore.
-
-# list for final data entries [X,y]
-X = []
-Y = []
-print("Running script with observed_years = " + str(
-    observed_years+1) + " This will return "+str(observed_years)+" differences. Please wait.")
-
-# iterate companies via company attribute list (not eqk csv!)
-index = 0
-
-for company in company_attribute_list[:]:
-
-    if (index % 100 == 0):
-        print(str(index) + "/" + str(len(company_attribute_list)))
-    index += 1
-    # get parameters from attribute list
-    old_name = company[0]
-    n_employees = company[2]
-    n_sales = company[3]
-    insolvency = company[7]
-
-    # filter big companies, continue if company is too big
-    if n_employees == "missing" and n_sales == "missing":
-        pass
-    elif (n_employees == "missing" and float(n_sales.replace(",", "")) >= 40) or (
-            n_sales == "missing" and int(n_employees.replace(",", "")) >= 250) or (
-            n_employees != "missing" and n_sales != "missing" and float(n_sales.replace(",", "")) >= 40 and int(
-        n_employees.replace(",", "")) >= 250):
-        #print("Unternehmen zu groß")
-        continue
-
-    # get all reviews where company name matches company
-    comp_reviews = company_reviews.loc[company_reviews['Unternehmen'] == old_name]
-
-    # check if company has enough reviews
-    if len(comp_reviews) < min_reviews:
-        #print("Zu wenig Reviews")
-        continue
-
-    # get all Bundesanzeiger entries where company name matches company
-    comp_entries = company_bundesanzeiger_entries.loc[
-        company_bundesanzeiger_entries['Unternehmensname_given'] == old_name]
-
-    # check if company has any bundesanzeiger entries
-    if len(comp_entries) == 0:
-        #print("Keine Bundesanzeiger Einträge")
-        continue
 
 
 
-
-    # calculate all yearly averages of a company
-    review_space = create_review_space(comp_reviews)
-    if review_space.empty:
-        continue
-
-
-    # create list of all EQKs of a company
-    ekq_space = create_eqk_space(comp_entries)
-    if ekq_space.empty:
-        continue
-
-    ### check which years are eligible to become a datapoint
-    # get a list of all years that contain reviews
-    review_years = get_all_review_years(comp_reviews)
-    # get a list of all years that contain bundesanzeiger entries
-    entry_years = get_all_entry_years(comp_entries)
-
-    eligible_years = get_eligible_years(review_years, entry_years, observed_years, continuity, use_prior)
-    #print(review_years)
-    #print(entry_years)
-    #print(eligible_years)
-    # if list is empty
-    if not eligible_years:
-        continue
+def main(**args):
+    print(args)
+    min_reviews = args.get('min_reviews')
+    observed_years = args.get('observed_years')
+    calc_arg_reviews = args.get('calc_arg_reviews')
+    calc_arg_entries = args.get('calc_arg_entries')
 
 
-    for eligible_year in eligible_years:
-        review,ekq = create_datapoint(eligible_year, review_space, ekq_space, observed_years, use_prior, calc_arg_reviews, calc_arg_entries)
+    ### DO NOT CHANGE THESE PARAMETERS ###
+    observed_years = observed_years - 1
+    # EXPLANATION: use_prior used to decide whether to use the year before the first year in our 3-year review window as an
+    # anchorpoint for our difference calculation. This is not required anymore because observed_years is now interpreted
+    # differently. continuity is not checked for anymore.
 
-        if np.isnan(ekq):
+    # list for final data entries [X,y]
+    X = []
+    Y = []
+    print("Running script with observed_years = " + str(
+        observed_years+1) + " This will return "+str(observed_years)+" differences. Please wait.")
+
+    # iterate companies via company attribute list (not eqk csv!)
+    index = 0
+
+    for company in company_attribute_list[:]:
+
+        if (index % 100 == 0):
+            print(str(index) + "/" + str(len(company_attribute_list)))
+        index += 1
+        # get parameters from attribute list
+        old_name = company[0]
+        n_employees = company[2]
+        n_sales = company[3]
+        insolvency = company[7]
+
+        # filter big companies, continue if company is too big
+        if n_employees == "missing" and n_sales == "missing":
+            pass
+        elif (n_employees == "missing" and float(n_sales.replace(",", "")) >= 40) or (
+                n_sales == "missing" and int(n_employees.replace(",", "")) >= 250) or (
+                n_employees != "missing" and n_sales != "missing" and float(n_sales.replace(",", "")) >= 40 and int(
+            n_employees.replace(",", "")) >= 250):
+            #print("Unternehmen zu groß")
             continue
-        # remove Category column, if True
-        if rem_category:
+
+        # get all reviews where company name matches company
+        comp_reviews = company_reviews.loc[company_reviews['Unternehmen'] == old_name]
+
+        # check if company has enough reviews
+        if len(comp_reviews) < min_reviews:
+            #print("Zu wenig Reviews")
+            continue
+
+        # get all Bundesanzeiger entries where company name matches company
+        comp_entries = company_bundesanzeiger_entries.loc[
+            company_bundesanzeiger_entries['Unternehmensname_given'] == old_name]
+
+        # check if company has any bundesanzeiger entries
+        if len(comp_entries) == 0:
+            #print("Keine Bundesanzeiger Einträge")
+            continue
+
+
+
+
+        # calculate all yearly averages of a company
+        review_space = create_review_space(comp_reviews)
+        if review_space.empty:
+            continue
+
+
+        # create list of all EQKs of a company
+        ekq_space = create_eqk_space(comp_entries)
+        if ekq_space.empty:
+            continue
+
+        ### check which years are eligible to become a datapoint
+        # get a list of all years that contain reviews
+        review_years = get_all_review_years(comp_reviews)
+        # get a list of all years that contain bundesanzeiger entries
+        entry_years = get_all_entry_years(comp_entries)
+
+        eligible_years = get_eligible_years(review_years, entry_years, observed_years)
+        #print(review_years)
+        #print(entry_years)
+        #print(eligible_years)
+        # if list is empty
+        if not eligible_years:
+            continue
+
+
+        for eligible_year in eligible_years:
+            review,ekq = create_datapoint(eligible_year, review_space, ekq_space, observed_years, calc_arg_reviews, calc_arg_entries)
+
+            if np.isnan(ekq):
+                continue
+
             review = review.drop("Category", axis=1)
-        columns = list(review.columns)
-        x = review.to_numpy(dtype=float)
+            columns = list(review.columns)
+            x = review.to_numpy(dtype=float)
 
-        # swap axis of array
-        x = np.swapaxes(x, 0, 1)
-        y = ekq
+            # swap axis of array
+            x = np.swapaxes(x, 0, 1)
+            y = ekq
 
-        X.append(x)
-        Y.append(y)
+            X.append(x)
+            Y.append(y)
 
-Xnp = np.array(X)
-Ynp = np.array(Y)
+    Xnp = np.array(X)
+    Ynp = np.array(Y)
 
-print(Xnp.shape)
-print(Ynp.shape)
+    print(Xnp.shape)
+    print(Ynp.shape)
 
-print("Done!")
-print("Your dataset contains " + str(Xnp.shape[0]) + " samples.")
-X_path = 'output/X_' + str(min_reviews) + '_' + str(observed_years+1) + '_' + calc_arg_reviews + '_' + calc_arg_entries
-Y_path = 'output/Y_' + str(min_reviews) + '_' + str(observed_years+1) + '_' + calc_arg_reviews + '_' + calc_arg_entries
-print(Y_path)
-# Naming: X_<min_reviews>_<observed_years>_<calc_arg_reviews>_<calc_arg_entries>
-# Hint: Observed years = Number of differences
-np.save(X_path, Xnp, allow_pickle=True)
-np.save(Y_path, Ynp, allow_pickle=True)
+    print("Done!")
+    print("Your dataset contains " + str(Xnp.shape[0]) + " samples.")
+    X_path = 'output/X_' + str(min_reviews) + '_' + str(observed_years+1) + '_' + calc_arg_reviews + '_' + calc_arg_entries
+    Y_path = 'output/Y_' + str(min_reviews) + '_' + str(observed_years+1) + '_' + calc_arg_reviews + '_' + calc_arg_entries
 
-#np.save('output/X_.npy', Xnp, allow_pickle=True)
-#np.save('output/Y.npy', Ynp, allow_pickle=True)
+    # Naming: X_<min_reviews>_<observed_years>_<calc_arg_reviews>_<calc_arg_entries>
+    # Hint: Observed years = Number of differences
+    np.save(X_path, Xnp, allow_pickle=True)
+    np.save(Y_path, Ynp, allow_pickle=True)
+
+    #np.save('output/X_.npy', Xnp, allow_pickle=True)
+    #np.save('output/Y.npy', Ynp, allow_pickle=True)
+
+params = {
+    'min_reviews' : [5,10],
+    'observed_years': [4,5,6],
+    'calc_arg_reviews': ['abs','first','prior'],
+    'calc_arg_entries': ['abs', 'rel'],
+
+}
+
+keys = list(params)
+
+for values in itertools.product(*map(params.get, keys)):
+    main(**dict(zip(keys, values)))
+

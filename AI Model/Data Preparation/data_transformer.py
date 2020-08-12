@@ -49,7 +49,7 @@ observed_years = 5
 # 'prior': calculates the differences of the moving average score to the score the year before
 # 'first': calculates the differences of the moving average score to the first considered year score
 #  'abs' : returns not the difference between moving average scores, but the scores themselves
-calc_arg_reviews = 'abs'
+calc_arg_reviews = 'prior'
 
 #  calc_arg_entries specifies the resulting calculation of the EK-Quote in the output file.
 # 'abs': calculates the difference in "Prozentpunkten" between the EKQ of two years
@@ -60,6 +60,8 @@ calc_arg_entries = 'abs'
 # Arbeitsatmosphäre etc. If you chose False, you will have to remove them manually later on. This has no effect on the
 # calculations
 rem_category = True
+
+continuity = False
 
 
 # ------------------ METHOD DECLARATION ------------------------#
@@ -85,9 +87,6 @@ def get_all_entry_years(comp_entries):
 # figures out the years that are eligible to become a datapoint
 def get_eligible_years(review_years, entry_years, observed_years, continuity, use_prior):
     possible_years = []
-    if use_prior:
-        observed_years+=1
-
 
     for entry_year in entry_years:
 
@@ -99,7 +98,7 @@ def get_eligible_years(review_years, entry_years, observed_years, continuity, us
         # check if continuity is required throughout years
         if continuity:
 
-            for i in range(0, observed_years):
+            for i in range(0, observed_years-1):
                 if (entry_year - i in review_years):
                     pass
                 else:
@@ -110,7 +109,7 @@ def get_eligible_years(review_years, entry_years, observed_years, continuity, us
 
         ## else, if continuity is not required, just check for minimum year
         else:
-            if min(review_years) <= entry_year - observed_years+1 and entry_year in review_years:
+            if min(review_years) <= entry_year - observed_years and entry_year in review_years:
                 possible_years.append(entry_year)
 
     return possible_years
@@ -194,9 +193,8 @@ def create_eqk_space(comp_entries):
 # the EKQ diff
 def create_datapoint(eligible_year, review_space, ekq_space, observed_years, use_prior, calc_arg_reviews, calc_arg_entries):
     # starts with calculation of review average differences
-    first_year = eligible_year - observed_years + 1
-    if use_prior:
-        first_year = eligible_year - observed_years
+
+    first_year = eligible_year - observed_years
 
     review_years = list(range(first_year, eligible_year+1))
     review_averages = review_space[review_years]
@@ -206,11 +204,9 @@ def create_datapoint(eligible_year, review_space, ekq_space, observed_years, use
         review_average_differences = review_averages
     if calc_arg_reviews == 'prior':
         review_average_differences = calculate_differences_to_prior(review_averages)
+        review_average_differences = review_average_differences.drop(review_average_differences.columns[0], axis=1)
     if calc_arg_reviews == 'first':
         review_average_differences = calculate_differences_to_first(review_averages)
-
-
-    if use_prior:
         review_average_differences = review_average_differences.drop(review_average_differences.columns[0], axis=1)
 
     review_average_differences.insert(0, "Category", review_space["Category"])
@@ -259,7 +255,7 @@ def calculate_differences_to_prior(df):
     for i, row in df.iterrows():
         new_elems = []
         # first element is the prior to itself
-        prior_elem = row[0]
+        prior_elem = row.iloc[0]
 
         # for each value in a rating row, calculate difference between element and prior element
         for elem in row:
@@ -273,6 +269,7 @@ def calculate_differences_to_prior(df):
 
         new_df_list.append(new_elems)
     new_df = pd.DataFrame(new_df_list, columns=df.columns)
+
     return new_df
 
 # currently unused
@@ -407,7 +404,6 @@ def check_data_continuity(comp_reviews, last_timestamp, first_timestamp, continu
 # --------------------------------------------------------------#
 
 ### DO NOT CHANGE THESE PARAMETERS ###
-continuity = False
 use_prior = True
 observed_years = observed_years-1
 # EXPLANATION: use_prior used to decide whether to use the year before the first year in our 3-year review window as an
@@ -418,7 +414,7 @@ observed_years = observed_years-1
 X = []
 Y = []
 print("Running script with observed_years = " + str(
-    observed_years) + " This will return "+str(observed_years-1)+" differences. Please wait.")
+    observed_years+1) + " This will return "+str(observed_years)+" differences. Please wait.")
 
 # iterate companies via company attribute list (not eqk csv!)
 index = 0
@@ -516,8 +512,8 @@ print(Ynp.shape)
 
 print("Done!")
 print("Your dataset contains " + str(Xnp.shape[0]) + " samples.")
-X_path = 'output/X_' + str(min_reviews) + '_' + str(observed_years) + '_' + calc_arg_reviews + '_' + calc_arg_entries
-Y_path = 'output/Y_' + str(min_reviews) + '_' + str(observed_years) + '_' + calc_arg_reviews + '_' + calc_arg_entries
+X_path = 'output/X_' + str(min_reviews) + '_' + str(observed_years+1) + '_' + calc_arg_reviews + '_' + calc_arg_entries
+Y_path = 'output/Y_' + str(min_reviews) + '_' + str(observed_years+1) + '_' + calc_arg_reviews + '_' + calc_arg_entries
 print(Y_path)
 # Naming: X_<min_reviews>_<observed_years>_<calc_arg_reviews>_<calc_arg_entries>
 # Hint: Observed years = Number of differences

@@ -224,6 +224,8 @@ def create_datapoint(eligible_year, review_space, ekq_space, observed_years, use
     if calc_arg_entries == "abs":
         ekq_diff = second_ekq-first_ekq
     elif calc_arg_entries == "rel":
+        if first_ekq == 0:
+            first_ekq = 0.000000001
         ekq_diff = (second_ekq-first_ekq)/first_ekq
 
     return review_average_differences, ekq_diff
@@ -410,7 +412,7 @@ use_prior = True
 observed_years = observed_years-1
 # EXPLANATION: use_prior used to decide whether to use the year before the first year in our 3-year review window as an
 # anchorpoint for our difference calculation. This is not required anymore because observed_years is now interpreted
-# differently. continuity is not required checked for anymore.
+# differently. continuity is not checked for anymore.
 
 # list for final data entries [X,y]
 X = []

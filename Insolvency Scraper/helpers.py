@@ -265,7 +265,7 @@ def scrape_court_and_insolvency(company_attributes, insolvency_court, time_out=0
 
         insolvency_court_raw = ""
         error_type = 0
-        company_attribute_i = company_attributes[i]
+        company_attribute_i = company_attributes[i].copy()
 
         name = company_attribute_i[1]
         plz = company_attribute_i[4]

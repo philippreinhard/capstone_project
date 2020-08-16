@@ -111,6 +111,78 @@ def get_random_forest_classification(x_path, y_path, classes, years, aggregation
 
     return report, accuracy
 
+# SVM Classification
+def get_svm_classification(x_path, y_path, classes, years, aggregation, selected_model):
+
+    x_path_git = 'AI Model/Data Preparation/output/' + x_path + '.npy'
+    y_path_git = 'AI Model/Data Preparation/output_categorized/' + y_path + '.npy'
+
+    X = np.load(x_path_git, allow_pickle=True)
+    Y = np.load(y_path_git, allow_pickle=True)
+
+    print(X.shape)
+    print(X[0])
+    print('Y:')
+    print(Y)
+
+    if aggregation == 'overall_review':
+        # only use Overall Review Rating
+        X_new = X[:, :, 0]
+
+    elif aggregation == 'average':
+        X_new = np.zeros((np.size(X, 0), 14))
+
+        c = 0
+        for comp in X:
+
+            new_comp = np.zeros((14))
+            for i in range(13):
+
+                years_sum = 0
+                for year in range(years - 1):
+                    years_sum = years_sum + comp[year][i]
+
+                new_comp[i] = years_sum / (years - 1)
+
+            X_new[c] = new_comp
+            c = c + 1
+
+    else:
+        raise ValueError("not supported value 'calc_agg_year':" + years)
+
+
+    X_train, X_test, Y_train, Y_test = train_test_split(X_new, Y, train_size=0.7, random_state=1, stratify=Y)
+
+
+
+    print("SCM_Classification")
+
+    linear = svm.SVC(kernel='linear', C=1, decision_function_shape='ovo').fit(X_train, Y_train)
+    print("linear finished")
+    rbf = svm.SVC(kernel='rbf', gamma=1, C=1, decision_function_shape='ovo').fit(X_train, Y_train)
+    print("rbf finished")
+    poly = svm.SVC(kernel='poly', degree=3, C=1, decision_function_shape='ovo').fit(X_train, Y_train)
+    print("poly finished")
+    sig = svm.SVC(kernel='sigmoid', C=1, decision_function_shape='ovo').fit(X_train, Y_train)
+    print("sig finished")
+
+    titles = ['_Linear', '_RBF', '_Sigmoid', '_Polynomial']
+
+    for i, clf in enumerate((linear, rbf, sig, poly)):
+        Y_pred = clf.predict(X_test)
+
+
+        svm_accuracy = metrics.accuracy_score(Y_test, Y_pred)
+        svm_report = metrics.classification_report(Y_test, Y_pred)
+        reports.append(svm_report)
+        all_accuracy.append(svm_accuracy)
+
+        get_plot(Y_test, Y_pred, Y_path, selected_model, aggregation, classes, svm_report, kernel=titles[i])
+
+        # Model Accuracy, how often is the classifier correct?
+        print("Accuracy" + titles[i] + ":", accuracy)
+
+
 
 def get_random_forest_regression(y_path, x_path, years, aggregation, selected_model, n_estimators, n_jobs):
     x_path_git = 'Data Preparation/output/' + x_path + '.npy'
@@ -268,7 +340,9 @@ for min_review in min_reviews:
 
                     if 'svm' in ai_model:
                         print("SVM:")
-                        # Jan hier code für SVM
+                        # Classification
+                        get_svm_classification(X_path, Y_path, classes=number_of_classes, years=observed_years,
+                                               aggregation=calc_agg_year, selected_model='svm')
 
 print(reports)
 print(max(all_accuracy))

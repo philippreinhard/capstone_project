@@ -8,6 +8,9 @@ from sklearn import svm
 from sklearn import preprocessing
 from sklearn.metrics import classification_report, confusion_matrix
 
+import os
+
+os.getcwd()
 
 np.random.seed(7)
 
@@ -15,8 +18,8 @@ y_filename = 'Y_5_4_first_abs'
 print(y_filename[2:])
 number_of_classes = 3
 
-y_path = 'output_categorized/' + y_filename + '_(' + str(number_of_classes) + ').npy'
-x_path = 'output/X_' + y_filename[2:] + '.npy'
+y_path = 'AI Model/Data Preparation/output_categorized/' + y_filename + '_(' + str(number_of_classes) + ').npy'
+x_path = 'AI Model/Data Preparation/output/X_' + y_filename[2:] + '.npy'
 
 X = np.load(x_path, allow_pickle=True)
 Y = np.load(y_path, allow_pickle=True)
@@ -33,7 +36,7 @@ def get_avg(a,b,c,j):
     avg=(a[j]+b[j]+c[j])/3
     return avg
 
-
+observed_year = 4
 
 new_X = np.zeros((np.size(X,0),14))
 c=0
@@ -43,6 +46,12 @@ for comp in X:
     for i in range(13):
 
         new_comp[i] = get_avg(comp[0], comp[1], comp[2], i)
+
+        years_sum = 0
+        for year in range(observed_year-1):
+            years_sum = years_sum + comp[year][i]
+
+        new_comp[i] = years_sum/(observed_year-1)
 
     new_X[c] = new_comp
     c=c+1

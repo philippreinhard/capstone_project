@@ -68,10 +68,10 @@ def get_random_forest_classification(x_path, y_path, classes, years, aggregation
             for i in range(13):
 
                 years_sum = 0
-                for year in range(observed_year - 1):
+                for year in range(years - 1):
                     years_sum = years_sum + comp[year][i]
 
-                new_comp[i] = years_sum / (observed_year - 1)
+                new_comp[i] = years_sum / (years - 1)
 
             X_new[c] = new_comp
             c = c + 1
@@ -150,10 +150,10 @@ def get_random_forest_regression(y_path, x_path, years, aggregation, selected_mo
             for i in range(13):
 
                 years_sum = 0
-                for year in range(observed_year - 1):
+                for year in range(years - 1):
                     years_sum = years_sum + comp[year][i]
 
-                new_comp[i] = years_sum / (observed_year - 1)
+                new_comp[i] = years_sum / (years - 1)
 
             X_new[c] = new_comp
             c = c + 1

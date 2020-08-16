@@ -103,25 +103,7 @@ def get_random_forest_classification(x_path, y_path, classes, years, aggregation
     report = metrics.classification_report(y_test, y_pred)
 
     # plots
-    cm = confusion_matrix(y_test, y_pred)
-
-    labels = ['0', '1']
-    plt.figure(figsize=(5, 5))
-    ax = plt.subplot()
-    sn.set(font_scale=1.4)  # for label size
-    sn.heatmap(cm, annot=True, ax=ax, annot_kws={"size": 7}, cmap='Greens')
-
-    # labels, title and ticks
-    ax.set_xlabel('Predicted labels')
-    ax.set_ylabel('True labels')
-    ax.set_title('Confusion Matrix:\n' + Y_path
-                 + '\nselected model:' + selected_model
-                 + '\naggregation: ' + aggregation, fontsize=12)
-    plt.suptitle(report, fontsize=8)
-    ax.xaxis.tick_top()
-    plt.yticks(rotation=0)
-    plt.tight_layout()
-    plt.savefig('AI Model/plots/' + selected_model + '/' + aggregation + '/' + str(classes) + '/' + Y_path + '.png')
+    get_plot(y_test, y_pred, Y_path, selected_model, aggregation, classes, report, kernel='')
 
     # Model Accuracy, how often is the classifier correct?
     print("Accuracy:", accuracy)
@@ -217,6 +199,30 @@ def get_random_forest_regression(y_path, x_path, years, aggregation, selected_mo
     # print("Accuracy:", accuracy)
 
 
+def get_plot(y_test, y_pred, Y_path, selected_model, aggregation, classes, report, kernel=''):
+
+    # create confusion matrix
+    cm = confusion_matrix(y_test, y_pred)
+
+    plt.figure(figsize=(5, 5))
+    ax = plt.subplot()
+    sn.set(font_scale=1.4)  # for label size
+    sn.heatmap(cm, annot=True, ax=ax, annot_kws={"size": 7}, cmap='Greens')
+
+    # labels, title and ticks
+    ax.set_xlabel('Predicted labels')
+    ax.set_ylabel('True labels')
+    ax.set_title('Confusion Matrix:\n' + Y_path
+                 + '\n' + selected_model
+                 + '\n' + aggregation
+                 + '\n' + kernel, fontsize=12)
+    plt.suptitle(report, fontsize=8)
+    ax.xaxis.tick_top()
+    plt.yticks(rotation=0)
+    plt.tight_layout()
+    plt.savefig('AI Model/plots/' + selected_model + '/' + str(classes) + '/' + Y_path + '_' + aggregation + kernel + '.png')
+
+
 all_accuracy = []
 all_mae = []
 all_mse = []
@@ -240,7 +246,7 @@ for min_review in min_reviews:
                         report, accuracy = get_random_forest_classification(X_path, Y_path, classes=number_of_class,
                                                                             years=observed_year,
                                                                             aggregation=calc_agg_year,
-                                                                            selected_model='rf', n_estimators=10000,
+                                                                            selected_model='rf', n_estimators=1000,
                                                                             n_jobs=-1)
 
                         reports.append(report)

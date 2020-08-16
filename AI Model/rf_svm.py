@@ -1,3 +1,4 @@
+import os
 import numpy as np
 # Import train_test_split function
 from sklearn.model_selection import train_test_split
@@ -43,8 +44,8 @@ calc_aggregate_years = ['overall_review', 'average']
 
 
 def get_random_forest_classification(x_path, y_path, classes, years, aggregation, selected_model, n_estimators, n_jobs):
-    x_path_git = 'AI Model/Data Preparation/output/' + x_path + '.npy'
-    y_path_git = 'AI Model/Data Preparation/output_categorized/' + y_path + '.npy'
+    x_path_git = 'Data Preparation/output/' + x_path + '.npy'
+    y_path_git = 'Data Preparation/output_categorized/' + y_path + '.npy'
 
     X = np.load(x_path_git, allow_pickle=True)
     Y = np.load(y_path_git, allow_pickle=True)
@@ -112,8 +113,8 @@ def get_random_forest_classification(x_path, y_path, classes, years, aggregation
 
 
 def get_random_forest_regression(y_path, x_path, years, aggregation, selected_model, n_estimators, n_jobs):
-    x_path_git = 'AI Model/Data Preparation/output/' + x_path + '.npy'
-    y_path_git = 'AI Model/Data Preparation/output/' + y_path + '.npy'
+    x_path_git = 'Data Preparation/output/' + x_path + '.npy'
+    y_path_git = 'Data Preparation/output/' + y_path + '.npy'
 
     X = np.load(x_path_git, allow_pickle=True)
     Y = np.load(y_path_git, allow_pickle=True)
@@ -220,7 +221,7 @@ def get_plot(y_test, y_pred, Y_path, selected_model, aggregation, classes, repor
     ax.xaxis.tick_top()
     plt.yticks(rotation=0)
     plt.tight_layout()
-    plt.savefig('AI Model/plots/' + selected_model + '/' + str(classes) + '/' + Y_path + '_' + aggregation + kernel + '.png')
+    plt.savefig('plots/' + selected_model + '/' + str(classes) + '/' + Y_path + '_' + aggregation + kernel + '.png')
 
 
 all_accuracy = []

@@ -37,9 +37,9 @@ number_of_classes = [3, 5, 6]
 ai_model = ['rf', 'svm']
 
 # aggregate years
-# 'first': only use first feature (ReviewRating)
-# 'avg': average over all years for each feature
-calc_agg_years = ['first', 'avg']
+# 'overall_review': only use first feature (ReviewRating)
+# 'average': average over all years for each feature
+calc_aggregate_years = ['overall_review', 'average']
 
 
 def get_random_forest_classification(x_path, y_path, classes, years, aggregation, selected_model, n_estimators, n_jobs):
@@ -54,11 +54,11 @@ def get_random_forest_classification(x_path, y_path, classes, years, aggregation
     print('Y:')
     print(Y)
 
-    if aggregation == 'first':
+    if aggregation == 'overall_review':
         # only use Overall Review Rating
         X_new = X[:, :, 0]
 
-    elif aggregation == 'avg':
+    elif aggregation == 'average':
         X_new = np.zeros((np.size(X, 0), 14))
 
         c = 0
@@ -118,11 +118,11 @@ def get_random_forest_regression(y_path, x_path, years, aggregation, selected_mo
     X = np.load(x_path_git, allow_pickle=True)
     Y = np.load(y_path_git, allow_pickle=True)
 
-    if aggregation == 'first':
+    if aggregation == 'overall_review':
         # only use Overall Review Rating
         X_new = X[:, :, 0]
 
-    elif aggregation == 'avg':
+    elif aggregation == 'average':
         X_new = np.zeros((np.size(X, 0), 14))
 
         c = 0
@@ -233,7 +233,7 @@ for min_review in min_reviews:
     for calc_arg_review in calc_arg_reviews:
         for observed_year in observed_years:
             for number_of_class in number_of_classes:
-                for calc_agg_year in calc_agg_years:
+                for calc_agg_year in calc_aggregate_years:
                     X_path = 'X_' + str(min_review) + '_' + str(observed_year) + '_' + calc_arg_review + '_' \
                              + calc_arg_entrie
                     Y_path = 'Y_' + str(min_review) + '_' + str(observed_year) + '_' + calc_arg_review + '_' \

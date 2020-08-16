@@ -112,10 +112,7 @@ def get_random_forest_classification(x_path, y_path, classes, years, aggregation
 # SVM Classification
 def get_svm_classification(x_path, y_path, classes, years, aggregation, selected_model):
     x_path_git = 'Data Preparation/output/' + x_path + '.npy'
-    # y_path_git = 'Data Preparation/output_categorized/' + y_path + '.npy'
-
-    x_path_git = 'AI Model/Data Preparation/output/' + x_path + '.npy'
-    y_path_git = 'AI Model/Data Preparation/output_categorized/' + y_path + '.npy'
+    y_path_git = 'Data Preparation/output_categorized/' + y_path + '.npy'
 
     X = np.load(x_path_git, allow_pickle=True)
     Y = np.load(y_path_git, allow_pickle=True)

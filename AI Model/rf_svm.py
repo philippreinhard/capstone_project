@@ -4,6 +4,8 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 # Import Random Forest Model
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+# import SVM
+from sklearn import svm
 # Import scikit-learn metrics module for accuracy calculation
 from sklearn import metrics
 from sklearn.metrics import confusion_matrix
@@ -49,11 +51,6 @@ def get_random_forest_classification(x_path, y_path, classes, years, aggregation
 
     X = np.load(x_path_git, allow_pickle=True)
     Y = np.load(y_path_git, allow_pickle=True)
-
-    print(X.shape)
-    print(X[0])
-    print('Y:')
-    print(Y)
 
     if aggregation == 'overall_review':
         # only use Overall Review Rating
@@ -111,19 +108,17 @@ def get_random_forest_classification(x_path, y_path, classes, years, aggregation
 
     return report, accuracy
 
+
 # SVM Classification
 def get_svm_classification(x_path, y_path, classes, years, aggregation, selected_model):
+    x_path_git = 'Data Preparation/output/' + x_path + '.npy'
+    # y_path_git = 'Data Preparation/output_categorized/' + y_path + '.npy'
 
     x_path_git = 'AI Model/Data Preparation/output/' + x_path + '.npy'
     y_path_git = 'AI Model/Data Preparation/output_categorized/' + y_path + '.npy'
 
     X = np.load(x_path_git, allow_pickle=True)
     Y = np.load(y_path_git, allow_pickle=True)
-
-    print(X.shape)
-    print(X[0])
-    print('Y:')
-    print(Y)
 
     if aggregation == 'overall_review':
         # only use Overall Review Rating
@@ -150,10 +145,7 @@ def get_svm_classification(x_path, y_path, classes, years, aggregation, selected
     else:
         raise ValueError("not supported value 'calc_agg_year':" + years)
 
-
     X_train, X_test, Y_train, Y_test = train_test_split(X_new, Y, train_size=0.7, random_state=1, stratify=Y)
-
-
 
     print("SCM_Classification")
 
@@ -171,7 +163,6 @@ def get_svm_classification(x_path, y_path, classes, years, aggregation, selected
     for i, clf in enumerate((linear, rbf, sig, poly)):
         Y_pred = clf.predict(X_test)
 
-
         svm_accuracy = metrics.accuracy_score(Y_test, Y_pred)
         svm_report = metrics.classification_report(Y_test, Y_pred)
         reports.append(svm_report)
@@ -181,7 +172,6 @@ def get_svm_classification(x_path, y_path, classes, years, aggregation, selected
 
         # Model Accuracy, how often is the classifier correct?
         print("Accuracy" + titles[i] + ":", accuracy)
-
 
 
 def get_random_forest_regression(y_path, x_path, years, aggregation, selected_model, n_estimators, n_jobs):
@@ -273,7 +263,6 @@ def get_random_forest_regression(y_path, x_path, years, aggregation, selected_mo
 
 
 def get_plot(y_test, y_pred, Y_path, selected_model, aggregation, classes, report, kernel=''):
-
     # create confusion matrix
     cm = confusion_matrix(y_test, y_pred)
 
@@ -341,7 +330,7 @@ for min_review in min_reviews:
                     if 'svm' in ai_model:
                         print("SVM:")
                         # Classification
-                        get_svm_classification(X_path, Y_path, classes=number_of_classes, years=observed_years,
+                        get_svm_classification(X_path, Y_path, classes=number_of_class, years=observed_year,
                                                aggregation=calc_agg_year, selected_model='svm')
 
 print(reports)

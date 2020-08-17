@@ -1,0 +1,24 @@
+
+X_?_4_first/prior_?: (Ohne Erste Zeile & Spalte)
+
+Category    ReviewRating    Arbeits_s   Image_s     Work_s      Karriere_s  Gehalt_s    Umwelt_s    Kollegenz_s Umgang_s    Vorges_s    Arbeitsbed_s    Komm_s      Gleichb_s   Inter_s
+
+2017        0.101000        0.076029    0.014221    0.018260    0.002998    0.096667    0.071449    0.013134    0.007966    0.002856    0.162428        0.131806    0.024158    0.032649
+2018        0.090000        0.066522    0.012228    0.016544    0.002570    0.141000    0.104987    0.021903    0.029634    0.004603    0.113333        0.083768    0.015399    0.020833
+2019        0.096667        0.071449    0.013134    0.017770    0.002760    0.110197    0.081450    0.014972    0.020257    0.003147    0.113833        0.084138    0.015466    0.020925
+
+(4794, 3, 14)
+
+
+
+Y_?_?_?_rel/abs:
+
+-12         (Unterschied zw. 2019 & 2020)
+
+(4794,)
+
+
+
+Namensgebung der Datensätze:
+
+X_[min_reviews]_[observed_years]_[calc_arg_reviews]_[calc_arg_entries]

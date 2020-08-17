@@ -11,6 +11,7 @@ from sklearn import metrics
 from sklearn.metrics import confusion_matrix
 import seaborn as sn
 import matplotlib.pyplot as plt
+import json
 
 # Load data
 # minimum amount of reviews per company (standard = 5)
@@ -100,13 +101,15 @@ def get_random_forest_classification(x_path, y_path, classes, years, aggregation
     accuracy = metrics.accuracy_score(y_test, y_pred)
     report = metrics.classification_report(y_test, y_pred)
 
+    f1_score = metrics.f1_score(y_test, y_pred, average='weighted')
+
     # plots
     get_plot(y_test, y_pred, Y_path, selected_model, aggregation, classes, report, kernel='')
 
     # Model Accuracy, how often is the classifier correct?
     print("Accuracy:", accuracy)
 
-    return report, accuracy
+    return report, accuracy, f1_score
 
 
 # SVM Classification
@@ -164,6 +167,9 @@ def get_svm_classification(x_path, y_path, classes, years, aggregation, selected
         svm_report = metrics.classification_report(Y_test, Y_pred)
         reports.append(svm_report)
         all_accuracy.append(svm_accuracy)
+
+        f1_score = metrics.f1_score(Y_test, Y_pred, average='weighted')
+        all_f1_scores_svm.update({f1_score: Y_path + '_svm_' + titles[i]})
 
         get_plot(Y_test, Y_pred, Y_path, selected_model, aggregation, classes, svm_report, kernel=titles[i])
 
@@ -287,6 +293,8 @@ all_mae = []
 all_mse = []
 all_rmse = []
 reports = []
+all_f1_scores_rf = dict()
+all_f1_scores_svm = dict()
 # define filename
 for min_review in min_reviews:
     for calc_arg_review in calc_arg_reviews:
@@ -302,14 +310,17 @@ for min_review in min_reviews:
                         print("RF:")
 
                         # Classification
-                        report, accuracy = get_random_forest_classification(X_path, Y_path, classes=number_of_class,
-                                                                            years=observed_year,
-                                                                            aggregation=calc_agg_year,
-                                                                            selected_model='rf', n_estimators=1000,
-                                                                            n_jobs=-1)
+                        report, accuracy, f1_score = get_random_forest_classification(X_path, Y_path,
+                                                                                      classes=number_of_class,
+                                                                                      years=observed_year,
+                                                                                      aggregation=calc_agg_year,
+                                                                                      selected_model='rf',
+                                                                                      n_estimators=1000,
+                                                                                      n_jobs=-1)
 
                         reports.append(report)
                         all_accuracy.append(accuracy)
+                        all_f1_scores_rf.update({f1_score: Y_path + '_rf'})
 
                         # Regression
                         # Y_path = 'Y_' + str(min_review) + '_' + str(observed_year) + '_' + calc_arg_review + '_' \
@@ -329,6 +340,18 @@ for min_review in min_reviews:
                         # Classification
                         get_svm_classification(X_path, Y_path, classes=number_of_class, years=observed_year,
                                                aggregation=calc_agg_year, selected_model='svm')
+            break
+        break
+    break
+
+# save dicts
+file = open("all_f1_scores_rf.json", "w")
+json.dump(all_f1_scores_rf, file)
+file.close()
+
+file = open("all_f1_scores_svm.json", "w")
+json.dump(all_f1_scores_svm, file)
+file.close()
 
 print(reports)
 print(max(all_accuracy))

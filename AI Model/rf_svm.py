@@ -340,9 +340,6 @@ for min_review in min_reviews:
                         # Classification
                         get_svm_classification(X_path, Y_path, classes=number_of_class, years=observed_year,
                                                aggregation=calc_agg_year, selected_model='svm')
-            break
-        break
-    break
 
 # save dicts
 file = open("all_f1_scores_rf.json", "w")
@@ -355,3 +352,15 @@ file.close()
 
 print(reports)
 print(max(all_accuracy))
+
+# load dicts
+file = open("all_f1_scores_rf.json", "r")
+all_f1_scores_rf = file.read()
+file = open("all_f1_scores_svm.json", "r")
+all_f1_scores_svm = file.read()
+
+rf_best_model = max(all_f1_scores_rf)
+print('Best score for Random Forest: \ndataset:' + all_f1_scores_rf[rf_best_model] + '\nf1_score: ' + str(rf_best_model) + '\n')
+
+svm_best_model = max(all_f1_scores_svm)
+print('Best score for Support Vector Machine: \ndataset:' + all_f1_scores_svm[svm_best_model] + '\nf1_score: ' + str(svm_best_model))

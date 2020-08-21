@@ -5,14 +5,6 @@ import json
 import numpy as np
 import os,glob
 
-# Input from y_transformer_visualized.py:
-bin_def_3 = [-np.inf, -0.05, 0.05, +np.inf]
-bin_def_5 = [-np.inf, -0.10, -0.02, 0.02, 0.10, +np.inf]
-bin_def_6 = [-np.inf, -0.15, -0.05, 0, 0.05, 0.15, +np.inf]
-
-
-bin_defs = [bin_def_3, bin_def_5, bin_def_6]
-
 folder_path = 'output/'
 
 def binning_y(bins_definition,Y_input):
@@ -26,6 +18,16 @@ def binning_y(bins_definition,Y_input):
         i += 1
     return bins
 
+def calculate_edges(bin_number, list):
+    bin_width = round(len(list) / bin_number, 0)
+    x = 1
+    edges = [-np.inf]
+    while x <= len(list):
+        if x % bin_width == 0:
+            edges.append(list[x - 1])
+        x += 1
+    edges.append(+np.inf)
+    return edges
 
 def produce_label_dic(calculated_edges):
     z = 1
@@ -43,24 +45,32 @@ def produce_label_dic(calculated_edges):
     # print(label_dic)
     return label_dic
 
+# print(calculate_edges(6))
+
+# 4 equal bins
+
+
+
 for filename in glob.glob(os.path.join(folder_path, '*.npy')):
     if filename.startswith('output\Y'):
         print(filename)
         single_filename = (filename[7:])[:-4]
-        print(single_filename)
+
         y_path = 'output/' + single_filename + '.npy'
         Y = np.load(y_path, allow_pickle=True)
         Y = Y.astype('float64')
 
-        for defs in bin_defs:
-            Y_new = np.array(binning_y(defs,Y), dtype=int)
-            Y_label_dic = produce_label_dic(defs)
-            print(Y_new)
+        Y = np.sort(Y)
 
-            # Export numpy and dictionary
-            number_of_classes = len(defs)-1
-            y_path_categorized = 'output_categorized/' + single_filename + '_(' + str(number_of_classes) + ').npy'
-            np.save(y_path_categorized, Y_new, allow_pickle=True)
+        edges_4 = calculate_edges(4, Y)
+        Y_new = np.array(binning_y(edges_4, Y), dtype=int)
+        Y_label_dic = produce_label_dic(edges_4)
+        print(Y_new)
+
+        # Export numpy and dictionary
+        number_of_classes = len(edges_4)-1
+        y_path_categorized = 'output_categorized/' + single_filename + '_(' + str(number_of_classes) + ').npy'
+        np.save(y_path_categorized, Y_new, allow_pickle=True)
 
 '''
 dic_path = 'output_categorized/y_dic_('+ str(number_of_classes) + ').json'

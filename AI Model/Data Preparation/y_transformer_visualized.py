@@ -7,7 +7,7 @@ import sys
 # ATTENTION: Use the y_transformer.py to bin your data and export a new numpy array Y
 
 # define the filename
-filename = 'Y_10_3_abs_abs'
+filename = 'Y_5_4_prior_abs'
 
 y_path = 'output/' + filename + '.npy'
 Y = np.load(y_path, allow_pickle=True)
@@ -132,10 +132,13 @@ def produce_labels(calculated_edges):
 
 # 6 equal bins
 edges_6 = calculate_edges(6, Z)
+edges_4 = calculate_edges(4, Z)
 # print(edges_6)
 # print(produce_labels(edges_6))
 counts_bins_equal_6 = calculate_bins_size(binning_y(edges_6), produce_labels(edges_6))
 plot_bin_counts(counts_bins_equal_6)
+counts_bins_equal_4 = calculate_bins_size(binning_y(edges_4), produce_labels(edges_4))
+plot_bin_counts(counts_bins_equal_4)
 
 # 8 equal bins
 edges_8 = calculate_edges(8, Z)

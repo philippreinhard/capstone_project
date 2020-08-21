@@ -10,8 +10,8 @@ from imblearn.under_sampling import (RandomUnderSampler,
                                      NeighbourhoodCleaningRule,
                                      NearMiss)
 
-epochs = 100
-batch_size = 10
+epochs = 200
+batch_size = 5
 
 np.set_printoptions(threshold=sys.maxsize)
 # fix random seed for reproducibility
@@ -19,7 +19,7 @@ np.set_printoptions(threshold=sys.maxsize)
 np.random.seed(7)
 
 # define filename
-y_filename = 'Y_5_3_first_abs'
+y_filename = 'Y_10_6_first_abs'
 
 number_of_classes = 5
 
@@ -63,6 +63,7 @@ input_dim = len(train_X[0][0])
 timesteps = len(train_X[0])
 
 input_shape = train_X[0].shape
+print(train_X.shape)
 
 # class_weight = {0: 1,
 #               1: 150}
@@ -75,16 +76,16 @@ print(train_X[0].shape)
 
 
 model = Sequential()
-model.add(Conv1D(filters=128, kernel_size=3, input_shape=input_shape, padding='same'))
+model.add(Conv2D(filters=20, kernel_size=3, input_shape=input_shape, padding='same'))
 # Options: relu, tanh, sigmoid
-model.add(Activation('relu'))
-model.add(MaxPool1D(pool_size=3)) # originally 2
+model.add(Activation('tanh'))
+model.add(MaxPool1D(pool_size=(2,2)) # originally 2
 
 # Dropout changed the concept of learning all the weights together to learning a fraction of the weights in the network in each training iteration
 # In Keras, the dropout rate argument is (1-p). For intermediate layers, choosing (1-p) = 0.5 for large networks is ideal.
 # For the input layer, (1-p) should be kept about 0.2 or lower. This is because dropping the input data can adversely affect the training.
 # A (1-p) > 0.5 is not advised, as it culls more connections without boosting the regularization.
-model.add(Dropout(0.2))
+model.add(Dropout(0.1))
 model.add(Flatten())
 model.add(Dense(5, activation='softmax'))
 model.compile(loss='sparse_categorical_crossentropy', optimizer='adam', metrics=['accuracy'])

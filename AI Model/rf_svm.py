@@ -354,13 +354,27 @@ print(reports)
 print(max(all_accuracy))
 
 # load dicts
+# load files
 file = open("all_f1_scores_rf.json", "r")
-all_f1_scores_rf = file.read()
+all_f1_scores_rf_json = file.read()
+file.close()
 file = open("all_f1_scores_svm.json", "r")
-all_f1_scores_svm = file.read()
+all_f1_scores_svm_json = file.read()
+file.close()
 
-rf_best_model = max(all_f1_scores_rf)
-print('Best score for Random Forest: \ndataset:' + all_f1_scores_rf[rf_best_model] + '\nf1_score: ' + str(rf_best_model) + '\n')
+# to dict
+all_f1_scores_rf = json.loads(all_f1_scores_rf_json)
+all_f1_scores_svm = json.loads(all_f1_scores_svm_json)
 
-svm_best_model = max(all_f1_scores_svm)
-print('Best score for Support Vector Machine: \ndataset:' + all_f1_scores_svm[svm_best_model] + '\nf1_score: ' + str(svm_best_model))
+top_5_rf = sorted(all_f1_scores_rf.keys(), reverse=True)[0:5]
+top_5_svm = sorted(all_f1_scores_svm.keys(), reverse=True)[0:5]
+
+idx = 0
+for value in top_5_rf:
+    idx=idx+1
+    print(str(idx) + '. best Random Forest Score: \ndataset:' + all_f1_scores_rf[value] + '\nf1_score: ' + str(value) + '\n')
+
+idx = 0
+for value in top_5_svm:
+    idx=idx+1
+    print(str(idx) + '. best Support Vector Machine: \ndataset:' + all_f1_scores_svm[value] + '\nf1_score: ' + str(value) + '\n')
